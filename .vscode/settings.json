@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "libbpf.h": "c",
+        "bpf.h": "c",
+        "types.h": "c"
+    }
+}
