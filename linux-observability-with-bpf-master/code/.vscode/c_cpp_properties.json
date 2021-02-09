@@ -1,0 +1,42 @@
+{
+    "configurations": [
+        {
+            "name": "GCC",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "P:/my_project/coding-net/ebpf_space/kernel-src/linux-5.8.10/samples",
+                "P:/my_project/coding-net/ebpf_space/kernel-src/linux-5.8.10/samples/bpf/",
+                "P:/my_project/coding-net/ebpf_space/kernel-src/linux-5.8.10/tools/perf",
+                "P:/my_project/coding-net/ebpf_space/kernel-src/linux-5.8.10/tools/include",
+                "P:/my_project/coding-net/ebpf_space/kernel-src/linux-5.8.10/tools/lib",
+                "P:/my_project/coding-net/ebpf_space/kernel-src/linux-5.8.10/include",
+                "D:/install/mingw-w64/x86_64-8.1.0-posix-seh-rt_v6-rev0/mingw64/include",
+                "D:/install/mingw-w64/x86_64-8.1.0-posix-seh-rt_v6-rev0/mingw64/x86_64-w64-mingw32/include"
+            ],
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE"
+            ],
+            "windowsSdkVersion": "10.0.17763.0",
+            "compilerPath": "D:/install/mingw-w64/x86_64-8.1.0-posix-seh-rt_v6-rev0/mingw64/bin/g++.exe",
+            "cStandard": "c11",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "gcc-x64",
+            "browse": {
+                "path": [
+                    "${workspaceFolder}/**",
+                    "P:/my_project/coding-net/ebpf_space/kernel-src/linux-5.8.10/samples",
+                    "P:/my_project/coding-net/ebpf_space/kernel-src/linux-5.8.10/samples/bpf/",
+                    "P:/my_project/coding-net/ebpf_space/kernel-src/linux-5.8.10/tools/perf",
+                    "P:/my_project/coding-net/ebpf_space/kernel-src/linux-5.8.10/tools/include",
+                    "P:/my_project/coding-net/ebpf_space/kernel-src/linux-5.8.10/tools/lib",
+                    "P:/my_project/coding-net/ebpf_space/kernel-src/linux-5.8.10/include",
+                    "D:/install/mingw-w64/x86_64-8.1.0-posix-seh-rt_v6-rev0/mingw64/include",
+                    "D:/install/mingw-w64/x86_64-8.1.0-posix-seh-rt_v6-rev0/mingw64/x86_64-w64-mingw32/include"
+                ]
+            }
+        }
+    ],
+    "version": 4
+}
