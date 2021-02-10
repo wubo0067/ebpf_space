@@ -2,6 +2,7 @@
     "files.associations": {
         "libbpf.h": "c",
         "bpf.h": "c",
-        "types.h": "c"
+        "types.h": "c",
+        "bpf_helpers.h": "c"
     }
 }

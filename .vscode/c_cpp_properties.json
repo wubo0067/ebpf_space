@@ -7,6 +7,9 @@
                 "D:/install/mingw-w64/x86_64-8.1.0-posix-seh-rt_v6-rev0/mingw64/include",
                 "D:/install/mingw-w64/x86_64-8.1.0-posix-seh-rt_v6-rev0/mingw64/x86_64-w64-mingw32/include",
                 "P:/my_project/linux/linux-5.10.14/include",
+                "P:/my_project/linux/linux-5.10.14/include/uapi",
+                "P:/my_project/linux/linux-5.10.14/arch/x86/include/uapi",
+                "P:/my_project/linux/linux-5.10.14/arch/alpha/include",
                 "P:/my_project/linux/linux-5.10.14/tools/lib",
                 "P:/my_project/linux/linux-5.10.14/arch/x86/include",
                 "D:/install/cygwin64/usr/include"
