@@ -3,6 +3,10 @@
         "libbpf.h": "c",
         "bpf.h": "c",
         "types.h": "c",
-        "bpf_helpers.h": "c"
+        "bpf_helpers.h": "c",
+        "stdint.h": "c",
+        "ptrace.h": "c",
+        "bpf_helper_defs.h": "c",
+        "*.tbl": "c"
     }
 }
