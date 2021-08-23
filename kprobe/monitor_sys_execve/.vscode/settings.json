@@ -1,0 +1,13 @@
+{
+    "files.associations": {
+        "bpf.h": "c",
+        "bpf_helpers.h": "c",
+        "sched.h": "c",
+        "bpf_tracing.h": "c",
+        "trace_common.h": "c",
+        "stringify.h": "c",
+        "libbpf.h": "c",
+        "types.h": "c",
+        "ptrace.h": "c"
+    }
+}

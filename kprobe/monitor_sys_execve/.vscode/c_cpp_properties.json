@@ -1,0 +1,37 @@
+{
+    "configurations": [
+        {
+            "name": "Win32",
+            "includePath": [
+                "${workspaceFolder}/**"
+            ],
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE"
+            ],
+            "cStandard": "gnu17",
+            "cppStandard": "gnu++14",
+            "intelliSenseMode": "windows-gcc-x64"
+        },
+        {
+            "name": "linux",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "E:\\develope\\linux\\linux-5.12.9\\include",
+                "E:\\develope\\linux\\linux-5.12.9\\tools\\lib",
+                "E:\\develope\\linux\\linux-5.12.9\\samples\\bpf"
+            ],
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE"
+            ],
+            "cStandard": "gnu17",
+            "cppStandard": "gnu++14",
+            "intelliSenseMode": "linux-clang-x64",
+            "compilerPath": "C:\\install\\cygwin64\\bin\\clang"
+        }
+    ],
+    "version": 4
+}
