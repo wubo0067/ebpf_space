@@ -33,6 +33,8 @@ sys_execve(const char __user *filename,
 		bpf_trace_printk( ____fmt, sizeof( ____fmt ), ##__VA_ARGS__ );                                                 \
 	} )
 
+#define _(P) ({typeof(P) val = 0; bpf_probe_read(&val, sizeof(val), &P); val;})    
+
 /*
     使用perf event来保存eBPF数据，从user程序读取
 */
@@ -46,7 +48,7 @@ struct
 
 SEC( "kprobe/" SYSCALL( sys_execve ) )
 int kprobe_sys_execve( struct pt_regs* ctx ) {
-	struct data_t data;
+	struct data_t data = { 0 };
 
 	data.pid = bpf_get_current_pid_tgid() >> 32;
 	data.uid = bpf_get_current_uid_gid();
@@ -59,9 +61,10 @@ int kprobe_sys_execve( struct pt_regs* ctx ) {
 	// 上面错误是 bpf_trace_printk 带的参数太多了 http://kerneltravel.net/blog/2020/ebpf_ljr_no3/
 	// printk( "pid:%d, uid:%d, executing program: %s", pid, uid, comm );
 
-	// struct pt_regs *real_regs = (struct pt_regs *)PT_REGS_PARM1(ctx);
-	// char *file_name = (char *)PT_REGS_PARM1_CORE(real_regs);
 	// 读取filename参数内容
+	// struct pt_regs *real_regs = (struct pt_regs *)PT_REGS_PARM1(ctx);
+	// char * file_name = PT_REGS_PARM1_CORE(real_regs);
+	// bpf_probe_read_user_str( &data.filename, sizeof( data.filename ), file_name );
 	bpf_probe_read_user_str( &data.filename, sizeof( data.filename ), ( char* ) PT_REGS_PARM1( ctx ) );
 	// printk( "filenameStr:[%s]", filenameStr );
 

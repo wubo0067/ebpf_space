@@ -36,7 +36,7 @@ LIBBPF = $(KERNEL_SRC)/tools/lib/bpf/libbpf.a -lelf -lz
 
 TRACE_HELPERS := $(KERNEL_SRC)/tools/testing/selftests/bpf/trace_helpers.o
 
-KPROGS_CFLAGS = -nostdinc -isystem /usr/lib/gcc/x86_64-redhat-linux/8/include
+KPROGS_CFLAGS = -nostdinc -isystem `$(CLANG) -print-file-name=include` #/usr/lib/gcc/x86_64-redhat-linux/8/include
 
 KPROGS_CFLAGS += -D__KERNEL__ -D__BPF_TRACING__ -D__TARGET_ARCH_$(SRCARCH)
 KPROGS_CFLAGS += -Wunused -Wall \
