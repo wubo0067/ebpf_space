@@ -57,16 +57,19 @@ LINUXINCLUDE    := \
 		-I$(KERNEL_SRC)/arch/$(SRCARCH)/include/generated/uapi \
 		-I$(KERNEL_SRC)/include/uapi \
 		-I$(KERNEL_SRC)/include/generated/uapi \
-		-include $(KERNEL_SRC)/include/linux/compiler-version.h -include $(KERNEL_SRC)/include/linux/kconfig.h
+		#-include $(KERNEL_SRC)/include/linux/compiler-version.h \
+		-include $(KERNEL_SRC)/include/linux/kconfig.h
 
 KPROGS_CFLAGS += $(LINUXINCLUDE)
 KPROGS_CFLAGS += -I$(KERNEL_SRC)/samples/bpf
 KPROGS_CFLAGS += -I$(KERNEL_SRC)/tools/testing/selftests/bpf/
 KPROGS_CFLAGS += -I$(KERNEL_SRC)/tools/lib
 
-UPROGS_CFLAGS = -Wunused -Wall -Wno-unused-variable
-UPROGS_CFLAGS += -I$(KERNEL_SRC)/tools/lib
-UPROGS_CFLAGS += -I$(KERNEL_SRC)/tools/testing/selftests/bpf/
+UPROGS_CFLAGS = -Wunused -Wall -Wno-unused-variable -Wmissing-prototypes -Wstrict-prototypes
+UPROGS_CFLAGS += -I$(KERNEL_SRC)/usr/include
+#UPROGS_CFLAGS += -I$(KERNEL_SRC)/include
+UPROGS_CFLAGS += -I$(KERNEL_SRC)/tools/lib -I$(KERNEL_SRC)/tools/include -I$(KERNEL_SRC)/tools/perf
+UPROGS_CFLAGS += -I$(KERNEL_SRC)/tools/testing/selftests/bpf
 
 execve_kern.o : execve_kern.c  
 	$(Q)$(CLANG) $(KPROGS_CFLAGS) -O2 -emit-llvm -Xclang -disable-llvm-passes -c $<  -o - | \
@@ -75,10 +78,10 @@ execve_kern.o : execve_kern.c
 
 
 execve : execve_user.o
-	$(CLANG) -o $@ execve_user.o $(TRACE_HELPERS) $(LIBBPF)
+	gcc -o $@ execve_user.o $(TRACE_HELPERS) $(LIBBPF)
 
 execve_user.o : execve_user.c
-	$(CLANG) $(UPROGS_CFLAGS) -c $< -o $@
+	gcc $(UPROGS_CFLAGS) -c $< -o $@
 
 clean:
 	rm *.o execve

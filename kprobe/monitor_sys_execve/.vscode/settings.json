@@ -8,6 +8,8 @@
         "stringify.h": "c",
         "libbpf.h": "c",
         "types.h": "c",
-        "ptrace.h": "c"
+        "ptrace.h": "c",
+        "typeinfo": "c",
+        "execve_data.h": "c"
     }
 }
