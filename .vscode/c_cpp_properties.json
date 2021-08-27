@@ -6,12 +6,12 @@
                 "${workspaceFolder}/**",
                 "C:/mingw64/include",
                 "C:/mingw64/x86_64-w64-mingw32/include",
-                "E:/develope/linux/linux-5.10.14/include",
-                "E:/develope/linux/linux-5.10.14/include/uapi",
-                "E:/develope/linux/linux-5.10.14/arch/x86/include/uapi",
-                "E:/develope/linux/linux-5.10.14/arch/alpha/include",
-                "E:/develope/linux/linux-5.10.14/tools/lib",
-                "E:/develope/linux/linux-5.10.14/arch/x86/include",
+                "E:/develope/linux/linux-5.12.9/include",
+                "E:/develope/linux/linux-5.12.9/include/uapi",
+                "E:/develope/linux/linux-5.12.9/arch/x86/include/uapi",
+                "E:/develope/linux/linux-5.12.9/arch/alpha/include",
+                "E:/develope/linux/linux-5.12.9/tools/lib",
+                "E:/develope/linux/linux-5.12.9/arch/x86/include",
                 "C:/install/cygwin64/usr/include"
             ],
             "defines": [
