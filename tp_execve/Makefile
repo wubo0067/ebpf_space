@@ -72,19 +72,19 @@ $(OUTPUT):
 	$(call msg,MKDIR,$@)
 	$(Q)mkdir -p $@
 
-$(APPS): %: $(OUTPUT)/%.o | $(OUTPUT)
+$(APPS): %: $(OUTPUT)/%.o
 	$(call msg,BINARY,$@)
-	$(Q)$(CC) -o $@ $^ $(COMMON_HELPER_OBJS) -lelf -lz
+	$(Q)$(CC) -o $@ $^ $(COMMON_HELPER_OBJS) $(LIBBPF)
 
-$(OUTPUT)/%.o: %.user.c %.skel.h
+$(OUTPUT)/%.o: %.user.c %.skel.h | $(OUTPUT)
 	$(call msg,OBJ,$@)
 	$(Q)$(CC) $(U_CFLAGS) -c $< -o $@
 
-%.skel.h: %.kern.o | $(OUTPUT)
+$(patsubst %,%.skel.h,$(APPS)): $(patsubst %,%.kern.o,$(APPS))
 	$(call msg,GEN-SKEL,$@)
 	$(Q)$(BPFTOOL) gen skeleton $< > $@
 
-%.kern.o: %.kern.c | $(OUTPUT)
+$(patsubst %,%.kern.o,$(APPS)): $(patsubst %,%.kern.c,$(APPS))
 	$(call msg,BPF,$@)
 	$(Q)$(CLANG) $(K_CFLAGS) -emit-llvm -Xclang -disable-llvm-passes -c $<  -o - | \
 		$(OPT) -O2 -mtriple=bpf-pc-linux | $(LLVM_DIS) | \
