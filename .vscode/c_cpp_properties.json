@@ -4,15 +4,15 @@
             "name": "GCC",
             "includePath": [
                 "${workspaceFolder}/**",
-                "D:/install/mingw-w64/x86_64-8.1.0-posix-seh-rt_v6-rev0/mingw64/include",
-                "D:/install/mingw-w64/x86_64-8.1.0-posix-seh-rt_v6-rev0/mingw64/x86_64-w64-mingw32/include",
-                "P:/my_project/linux/linux-5.10.14/include",
-                "P:/my_project/linux/linux-5.10.14/include/uapi",
-                "P:/my_project/linux/linux-5.10.14/arch/x86/include/uapi",
-                "P:/my_project/linux/linux-5.10.14/arch/alpha/include",
-                "P:/my_project/linux/linux-5.10.14/tools/lib",
-                "P:/my_project/linux/linux-5.10.14/arch/x86/include",
-                "D:/install/cygwin64/usr/include"
+                "C:/mingw64/include",
+                "C:/mingw64/x86_64-w64-mingw32/include",
+                "E:/develope/linux/linux-5.10.14/include",
+                "E:/develope/linux/linux-5.10.14/include/uapi",
+                "E:/develope/linux/linux-5.10.14/arch/x86/include/uapi",
+                "E:/develope/linux/linux-5.10.14/arch/alpha/include",
+                "E:/develope/linux/linux-5.10.14/tools/lib",
+                "E:/develope/linux/linux-5.10.14/arch/x86/include",
+                "C:/install/cygwin64/usr/include"
             ],
             "defines": [
                 "_DEBUG",
@@ -20,7 +20,7 @@
                 "_UNICODE"
             ],
             "windowsSdkVersion": "10.0.17763.0",
-            "compilerPath": "D:/install/mingw-w64/x86_64-8.1.0-posix-seh-rt_v6-rev0/mingw64/bin/g++.exe",
+            "compilerPath": "C:/mingw64/bin/gcc.exe",
             "cStandard": "c11",
             "cppStandard": "c++17",
             "intelliSenseMode": "gcc-x64"

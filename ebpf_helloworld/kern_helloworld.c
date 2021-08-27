@@ -9,7 +9,7 @@
 //#include <linux/version.h>
 //#include <linux/types.h>
 //#include <asm/types.h>
-#include <uapi/linux/types.h>
+#include <linux/types.h>
 #include <uapi/linux/bpf.h>
 #include <bpf/bpf_helpers.h>
 //#include <linux/bpf.h>
