@@ -8,8 +8,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "tp_execve.skel.h"
 #include "event.h"
+#include "tp_execve.skel.h"
+
 
 int32_t main( int32_t argc, char** argv ) { 
     fprintf( stderr, "main: %s\n", argv[0] );

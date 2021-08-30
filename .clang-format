@@ -18,16 +18,16 @@ SpacesInParentheses: true
 SpacesInSquareBrackets: true
 BreakBeforeBraces: Custom
 BraceWrapping:
-  AfterClass:      true
+  AfterClass:      false
   AfterControlStatement: false
-  AfterEnum:       true
+  AfterEnum:       false
   AfterFunction:   false
   AfterNamespace:  true
   AfterObjCDeclaration: true
-  AfterStruct:     true
+  AfterStruct:     false
   AfterUnion:      false
-  BeforeCatch:     true
-  BeforeElse:      true
+  BeforeCatch:     false
+  BeforeElse:      false
   IndentBraces:    false
 AlignConsecutiveAssignments:	true
 #AlignConsecutiveDeclarations:	true
