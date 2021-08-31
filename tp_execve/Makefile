@@ -1,5 +1,17 @@
 APPS = tp_execve
+
 OUTPUT := .output
+# :前面的变量不能使用后面的变量，只能使用前面已定义好了的变量
+SRCS		= $(wildcard *.c)
+OBJS     	:= $(patsubst %.c, %.o, $(SRCS))
+BPF_KERN_OBJ = $(patsubst %,%.kern.o,$(APPS))
+BPF_USER_OBJ = $(patsubst %,%.user.o,$(APPS))
+
+# 编写的辅助函数
+HELP_OBJS_1 := $(filter-out $(BPF_KERN_OBJ),$(OBJS))
+HELP_OBJS_2 := $(filter-out $(BPF_USER_OBJ),$(HELP_OBJS_1))
+HELP_OBJS := $(addprefix $(OUTPUT)/, $(HELP_OBJS_2))
+
 BPFTOOL ?= /usr/sbin/bpftool
 CFLAGS := -g -O2 -Wall
 INCLUDES =
@@ -39,10 +51,10 @@ K_CFLAGS += -Wunused -Wall \
 			-Wno-unknown-warning-option \
 			-fno-stack-protector 
 
-K_CFLAGS += $(KERNEL_SRC_INCLUDE)
+K_CFLAGS += -I./ $(KERNEL_SRC_INCLUDE)
 
 U_CFLAGS = -Wunused -Wall -Wno-unused-variable -Wmissing-prototypes -Wstrict-prototypes
-U_CFLAGS += -I$(KERNEL_SRC)/usr/include
+U_CFLAGS += -I./ -I$(KERNEL_SRC)/usr/include
 #U_CFLAGS += -I$(KERNEL_SRC)/include
 U_CFLAGS += -I$(KERNEL_SRC)/tools/lib -I$(KERNEL_SRC)/tools/include -I$(KERNEL_SRC)/tools/perf
 U_CFLAGS += -I$(KERNEL_SRC)/tools/testing/selftests/bpf
@@ -72,11 +84,16 @@ $(OUTPUT):
 	$(call msg,MKDIR,$@)
 	$(Q)mkdir -p $@
 
-$(APPS): %: $(OUTPUT)/%.o
+$(APPS): %: $(OUTPUT)/$(BPF_USER_OBJ) $(HELP_OBJS)
 	$(call msg,BINARY,$@)
 	$(Q)$(CC) -o $@ $^ $(COMMON_HELPER_OBJS) $(LIBBPF)
 
-$(OUTPUT)/%.o: %.user.c %.skel.h | $(OUTPUT)
+$(HELP_OBJS): $(OUTPUT)/%.o: %.c
+	$(call msg,HELP_OBJS,$@)
+	$(Q)$(CC) $(U_CFLAGS) -c $< -o $@
+
+# 推导必须一层一层，如果已经解析出来了，就没法解析%了
+$(OUTPUT)/$(BPF_USER_OBJ): $(OUTPUT)/%.user.o: %.user.c %.skel.h | $(OUTPUT)
 	$(call msg,OBJ,$@)
 	$(Q)$(CC) $(U_CFLAGS) -c $< -o $@
 

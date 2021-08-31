@@ -17,8 +17,8 @@
 #define FULL_MAX_ARGS_ARR ( TOTAL_MAX_ARGS * ARGSIZE )
 #ifdef INVALID_UID
 #	undef INVALID_UID
-#	define INVALID_UID ( ( uid_t ) -1 )
 #endif
+#define INVALID_UID ( ( uid_t ) -1 )
 
 struct event_t {
 	pid_t pid;
