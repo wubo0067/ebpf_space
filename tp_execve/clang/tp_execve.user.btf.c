@@ -2,7 +2,7 @@
  * @Author: CALM.WU
  * @Date: 2021-08-27 11:57:38
  * @Last Modified by: CALM.WU
- * @Last Modified time: 2021-08-31 16:33:58
+ * @Last Modified time: 2021-09-01 17:19:16
  */
 
 #include <stdio.h>
@@ -10,131 +10,112 @@
 #include <sys/time.h>
 #include <time.h>
 
-#include <trace_helpers.h>
-
 #include "bpf_help.h"
+#include "event_help.h"
 #include "event.h"
 #include "tp_execve.skel.h"
 
 #define PERF_BUFFER_PAGES 64
 
-static struct env {
-	bool time;
-	bool timestamp;
-	bool fails;
-	uid_t uid;
-	bool quote;
-	const char* name;
-	const char* line;
-	bool print_uid;
-	bool verbose;
-	int32_t max_args;
-} env = {
-	.max_args = DEFAULT_MAXARGS, .uid = INVALID_UID, .quote = true, .time = true, .print_uid = true, .timestamp = true
-};
+// struct env_t g_env = {
+// 	.max_args = DEFAULT_MAXARGS, .uid = INVALID_UID, .quote = true, .time = true, .print_uid = true, .timestamp = true
+// };
 
-static struct timespec start_time;
+// static struct timespec start_time;
 
-int32_t libbpf_printf( enum libbpf_print_level level, const char* fmt, va_list args ) {
-	if ( level == LIBBPF_DEBUG && !env.verbose ) {
-		return 0;
-	}
-	return vfprintf( stderr, fmt, args );
-}
+// static void time_since_start() {
+// 	int64_t secs, nsecs;
+// 	static struct timespec cur_time;
+// 	double time_diff;
 
-static void time_since_start() {
-	int64_t secs, nsecs;
-	static struct timespec cur_time;
-	double time_diff;
+// 	clock_gettime( CLOCK_MONOTONIC, &cur_time );
+// 	nsecs = cur_time.tv_nsec - start_time.tv_nsec;
+// 	secs  = cur_time.tv_sec - start_time.tv_sec;
+// 	if ( nsecs < 0 ) {
+// 		nsecs += NSEC_PER_SEC;
+// 		secs--;
+// 	}
 
-	clock_gettime( CLOCK_MONOTONIC, &cur_time );
-	nsecs = cur_time.tv_nsec - start_time.tv_nsec;
-	secs  = cur_time.tv_sec - start_time.tv_sec;
-	if ( nsecs < 0 ) {
-		nsecs += NSEC_PER_SEC;
-		secs--;
-	}
+// 	time_diff = secs + ( nsecs / NSEC_PER_SEC );
+// 	printf( "%-8.3f", time_diff );
+// }
 
-	time_diff = secs + ( nsecs / NSEC_PER_SEC );
-	printf( "%-8.3f", time_diff );
-}
+// static void inline quoted_symbol( char c ) {
+// 	switch ( c ) {
+// 		case '"':
+// 			putchar( '\\' );
+// 			putchar( '"' );
+// 			break;
+// 		case '\t':
+// 			putchar( '\\' );
+// 			putchar( 't' );
+// 			break;
+// 		case '\n':
+// 			putchar( '\\' );
+// 			putchar( 'n' );
+// 			break;
+// 		default:
+// 			putchar( c );
+// 			break;
+// 	}
+// }
 
-static void inline quoted_symbol( char c ) {
-	switch ( c ) {
-		case '"':
-			putchar( '\\' );
-			putchar( '"' );
-			break;
-		case '\t':
-			putchar( '\\' );
-			putchar( 't' );
-			break;
-		case '\n':
-			putchar( '\\' );
-			putchar( 'n' );
-			break;
-		default:
-			putchar( c );
-			break;
-	}
-}
+// static void print_args( const struct event_t* e, bool quote ) {
+// 	int32_t i, args_counter = 0;
 
-static void print_args( const struct event_t* e, bool quote ) {
-	int32_t i, args_counter = 0;
+// 	if ( g_env.quote )
+// 		putchar( '"' );
 
-	if ( env.quote )
-		putchar( '"' );
+// 	for ( i = 0; i < e->args_size && args_counter < e->args_count; i++ ) {
+// 		char c = e->args[ i ];
 
-	for ( i = 0; i < e->args_size && args_counter < e->args_count; i++ ) {
-		char c = e->args[ i ];
-
-		if ( env.quote ) {
-			if ( c == '\0' ) {
-				args_counter++;
-				putchar( '"' );
-				putchar( ' ' );
-				if ( args_counter < e->args_count ) {
-					putchar( '"' );
-				}
-			} else {
-				quoted_symbol( c );
-			}
-		} else {
-			if ( c == '\0' ) {
-				args_counter++;
-				putchar( ' ' );
-			} else {
-				putchar( c );
-			}
-		}
-	}
-	if ( e->args_count == env.max_args + 1 ) {
-		fputs( " ...", stdout );
-	}
-}
+// 		if ( g_env.quote ) {
+// 			if ( c == '\0' ) {
+// 				args_counter++;
+// 				putchar( '"' );
+// 				putchar( ' ' );
+// 				if ( args_counter < e->args_count ) {
+// 					putchar( '"' );
+// 				}
+// 			} else {
+// 				quoted_symbol( c );
+// 			}
+// 		} else {
+// 			if ( c == '\0' ) {
+// 				args_counter++;
+// 				putchar( ' ' );
+// 			} else {
+// 				putchar( c );
+// 			}
+// 		}
+// 	}
+// 	if ( e->args_count == g_env.max_args + 1 ) {
+// 		fputs( " ...", stdout );
+// 	}
+// }
 
 // perf event call back function
-static void handle_event( void* ctx, int32_t cpu, void* data, uint32_t size ) {
-	const struct event_t* e = ( const struct event_t* ) data;
-	time_t t;
-	struct tm* tm;
-	char ts[ 32 ];
+// static void handle_event( void* ctx, int32_t cpu, void* data, uint32_t size ) {
+// 	const struct event_t* e = ( const struct event_t* ) data;
+// 	time_t t;
+// 	struct tm* tm;
+// 	char ts[ 32 ];
 
-	time( &t );
-	tm = localtime( &t );
-	strftime( ts, sizeof( ts ), "%H:%M:%S", tm );
+// 	time( &t );
+// 	tm = localtime( &t );
+// 	strftime( ts, sizeof( ts ), "%H:%M:%S", tm );
 
-	printf( "%-8s ", ts );
-	time_since_start();
-	printf( "%-6d", e->uid );
-	printf( "%-16s %-6d %-6d %3d ", e->comm, e->pid, e->ppid, e->retval );
-	print_args( e, env.quote );
-	putchar( '\n' );
-}
+// 	printf( "%-8s ", ts );
+// 	time_since_start();
+// 	printf( "%-6d", e->uid );
+// 	printf( "%-16s %-6d %-6d %3d ", e->comm, e->pid, e->ppid, e->retval );
+// 	print_args( e, g_env.quote );
+// 	putchar( '\n' );
+// }
 
-static void handle_lost_event( void* ctx, int32_t cpu, uint64_t lost_cnt ) {
-	fprintf( stderr, "Lost %lu events on CPU #%d!\n", lost_cnt, cpu );
-}
+// static void handle_lost_event( void* ctx, int32_t cpu, uint64_t lost_cnt ) {
+// 	fprintf( stderr, "Lost %lu events on CPU #%d!\n", lost_cnt, cpu );
+// }
 
 int32_t main( int32_t argc, char** argv ) {
 	int32_t err                     = 0;
@@ -142,9 +123,12 @@ int32_t main( int32_t argc, char** argv ) {
 	struct perf_buffer* pb          = NULL;
 	struct tp_execve_kern* bpf_obj  = NULL;
 
+	g_env.max_args = DEFAULT_MAXARGS;
+	g_env.uid      = INVALID_UID;
+
 	fprintf( stderr, "main: %s\n", argv[ 0 ] );
 
-	libbpf_set_print( libbpf_printf );
+	libbpf_set_print( bpf_printf );
 
 	err = bump_memlock_rlimit();
 	if ( err ) {
@@ -159,10 +143,10 @@ int32_t main( int32_t argc, char** argv ) {
 	}
 
 	/* initialize global data (filtering options)，传递参数控制bpf kern程序的过滤行为 */
-	bpf_obj->rodata->ignore_failed = !env.fails;
-	bpf_obj->rodata->target_uid    = env.uid;
+	bpf_obj->rodata->ignore_failed = !g_env.fails;
+	bpf_obj->rodata->target_uid    = g_env.uid;
 	// 最大的参数个数
-	bpf_obj->rodata->max_args = env.max_args;
+	bpf_obj->rodata->max_args = g_env.max_args;
 
 	// 加载bpf kern程序
 	err = tp_execve_kern__load( bpf_obj );

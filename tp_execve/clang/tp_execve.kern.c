@@ -2,7 +2,7 @@
  * @Author: CALM.WU
  * @Date: 2021-08-27 10:49:37
  * @Last Modified by: CALM.WU
- * @Last Modified time: 2021-08-27 17:51:30
+ * @Last Modified time: 2021-09-01 19:14:08
  */
 
 #include <linux/ptrace.h>
@@ -10,7 +10,7 @@
 
 #include <uapi/linux/bpf.h>
 
-#include <bpf/bpf_core_read.h>
+//#include <bpf/bpf_core_read.h> 这个需要BTF支持
 #include <bpf/bpf_helpers.h>
 #include <bpf/bpf_tracing.h>
 #include <trace_common.h>
@@ -29,6 +29,7 @@ struct {
 	__uint( max_entries, 1024 );
 	__type( key, pid_t );
 	__type( value, struct event_t );
+	__uint( value_size, sizeof( struct event_t ) );
 } execve_hash SEC( ".maps" );
 
 // 将ebpf数据做为event上报
@@ -41,10 +42,11 @@ struct {
 
 // Based on /sys/kernel/debug/tracing/events/syscalls/sys_enter_execve/format
 struct enter_execve_args {
-	__s16 common_type;
-	char common_flags;
-	char common_preempt_count;
-	__s32 common_pid;
+	// __s16 common_type;
+	// char common_flags;
+	// char common_preempt_count;
+	// __s32 common_pid;
+	unsigned long long unused;
 	__s32 __syscall_nr;
 	char* filename;
 	const char* const* argv;
@@ -112,16 +114,27 @@ __s32 tracepoint__syscalls__sys_enter_execve( struct enter_execve_args* ctx ) {
 	// tgid使用主线程的pid
 	event->pid = tgid;
 	event->uid = uid;
+
 	// 获取当前task_struct
 	task = ( struct task_struct* ) bpf_get_current_task();
-	// 通过task获取父进程id
-	event->ppid       = ( pid_t ) BPF_CORE_READ( task, real_parent, tgid );
+
+	// 通过task获取父进程id, 这个需要BTF，没法使用在不支持BTF的内核上
+	// event->ppid       = ( pid_t ) BPF_CORE_READ( task, real_parent, tgid );
+	struct task_struct* real_parent_task;
+	bpf_probe_read( &real_parent_task, sizeof( real_parent_task ), &task->real_parent );
+	bpf_probe_read( &event->ppid, sizeof( event->ppid ), &real_parent_task->pid );
+
 	event->args_count = 0;
 	event->args_size  = 0;
 
 	// 读取命令名，觉得这个和bpf_get_current_comm应该想用，args[0]
 	// 命令行参数都是用户空间分配的，所以用***_user_str
-	ret = bpf_probe_read_user_str( event->args, ARGSIZE, ( const char* ) ctx->argv[ 0 ] );
+	// https://stackoverflow.com/questions/67188440/ebpf-cannot-read-argv-and-envp-from-tracepoint-sys-enter-execve
+	// 先读取第一个参数地址，在读取第一个参数内容
+	bpf_probe_read( &argp, sizeof( argp ), &ctx->argv[ 0 ] );
+	ret = bpf_probe_read_user_str( event->args, ARGSIZE, argp );
+
+	// ret = bpf_probe_read_user_str( event->args, ARGSIZE, ( const char* ) ctx->argv[ 0 ] );
 	if ( ret < ARGSIZE ) {
 		event->args_size += ret;
 	} else {
@@ -132,26 +145,43 @@ __s32 tracepoint__syscalls__sys_enter_execve( struct enter_execve_args* ctx ) {
 	// 参数个数递增
 	event->args_count++;
 
-// 告诉编译器，不做循环展开
-#pragma unroll
-	// 读取命令后面的参数
-	for ( __s32 i = 1; i < TOTAL_MAX_ARGS && i < max_args; i++ ) {
-		// 读取参数地址
-		ret = bpf_probe_read_user( &argp, sizeof( argp ), &( ctx->argv[ i ] ) );
-		if ( !argp ) {
-			// 地址为空，说明没有参数
-			return 0;
-		}
+	// 读取第二个参数
+	bpf_probe_read( &argp, sizeof( argp ), &ctx->argv[ 1 ] );
+	if ( !argp ) {
+		return 0;
+	}
 
-		// 读取参数内容
-		ret = bpf_probe_read_user_str( &event->args[ event->args_size ], ARGSIZE, argp );
-		if ( ret > ARGSIZE ) {
-			printk( "argc: %d size larger than ARGSIZE", i );
-			return 0;
-		}
+    // 这行代码非常重要，如果不加上，下面代码是没法判断空间是否足够读取ARGSIZE这多字节的。而且BPF Verifier会报错
+	if ( event->args_size > LAST_ARG )
+		return 0;
 
-		event->args_size += ret;
-		event->args_count++;
+	ret = bpf_probe_read_user_str( event->args + event->args_size, ARGSIZE, argp );
+	if ( ret > ARGSIZE ) {
+		return 0;
+	}
+
+	event->args_size += ret;
+	event->args_count++;
+
+	// 告诉编译器，不做循环展开
+	// #pragma unroll
+	for ( __s32 i = 1; i < DEFAULT_MAXARGS && i < max_args; i++ ) {
+		// // 读取参数地址
+		// ret = bpf_probe_read( &argp, sizeof( argp ), argvpp[ i ] );
+		// if ( !argp ) {
+		// 	// 地址为空，说明没有参数
+		// 	return 0;
+		// }
+
+		// // 读取参数内容
+		// ret = bpf_probe_read_user_str( &event->args[ event->args_size ], ARGSIZE, argp );
+		// if ( ret > ARGSIZE ) {
+		// 	printk( "argc: %d size larger than ARGSIZE", i );
+		// 	return 0;
+		// }
+
+		// event->args_size += ret;
+		// event->args_count++;
 	}
 
 	return 0;
@@ -193,11 +223,16 @@ int tracepoint__syscalls__sys_exit_execve( struct exit_execve_args* ctx ) {
 	// 得到应用程序名字
 	bpf_get_current_comm( &event->comm, sizeof( event->comm ) );
 	// 计算event数据的实际长度
-	size_t event_len = offsetof( struct event_t, args ) + event->args_size;
-	printk( "execute:%s event_len:%llu", event->comm, event_len );
-	if ( event_len < sizeof( struct event_t ) ) {
-		bpf_perf_event_output( ctx, &execve_perf_evt_map, BPF_F_CURRENT_CPU, event, event_len );
-	}
+	// size_t event_len = offsetof( struct event_t, args ) + event->args_size;
+	bpf_perf_event_output( ctx, &execve_perf_evt_map, BPF_F_CURRENT_CPU, event, sizeof( *event ) );
+	// 下面这种计算长度，会校验报错，R5 unbounded memory access, use 'var &= const' or 'if (var < const)'
+	// event_len小于sizeof( struct event_t )，导致的
+
+	// size_t event_len = offsetof( struct event_t, args ) + event->args_size;
+	// printk( "execute:%s event_len:%llu", event->comm, event_len );
+	// if ( event_len <= sizeof( *event ) ) {
+	// 	bpf_perf_event_output( ctx, &execve_perf_evt_map, BPF_F_CURRENT_CPU, event, event_len );
+	// }
 	return 0;
 }
 

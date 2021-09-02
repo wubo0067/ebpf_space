@@ -8,6 +8,10 @@
         "ptrace.h": "c",
         "bpf_helper_defs.h": "c",
         "*.tbl": "c",
-        "tp_execve.skel.h": "c"
+        "tp_execve.skel.h": "c",
+        "time.h": "c",
+        "event.h": "c",
+        "bpf_help.h": "c",
+        "bpf_core_read.h": "c"
     }
 }
