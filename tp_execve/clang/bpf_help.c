@@ -28,8 +28,8 @@ int bump_memlock_rlimit( void ) {
 }
 
 int bpf_printf( enum libbpf_print_level level, const char* fmt, va_list args ) {
-	if ( level == LIBBPF_DEBUG && !g_env.verbose ) {
-		return 0;
-	}
+	// if ( level == LIBBPF_DEBUG && !g_env.verbose ) {
+	// 	return 0;
+	// }
 	return vfprintf( stderr, fmt, args );
 }

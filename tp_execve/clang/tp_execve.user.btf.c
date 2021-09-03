@@ -143,6 +143,7 @@ int32_t main( int32_t argc, char** argv ) {
 	}
 
 	/* initialize global data (filtering options)，传递参数控制bpf kern程序的过滤行为 */
+    // 在load之前修改只读代码段的变量
 	bpf_obj->rodata->ignore_failed = !g_env.fails;
 	bpf_obj->rodata->target_uid    = g_env.uid;
 	// 最大的参数个数
