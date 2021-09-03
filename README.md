@@ -29,8 +29,20 @@
 
 
 
-3. size_t的打印。bpf_trace_printk只支持%d, %i, %u, %x, %ld, %li, %lu, %lx, %lld, %lli, %llu, %llx, %p, %s，size_t类型变量一般用%zu，这里没有，所以使用bpf_trace_printk打印size_t变量，fmt中没有对应，Verifier会报错。建议改为其它整数类型。
+3. printk( "execute:%s, event length: %u", evt->comm, len );，如果len是size_t类型，没有匹配的format，应为format只支持%d, %i, %u, %x, %ld, %li, %lu, %lx, %lld, %lli, %llu, %llx, %p, %s，所以会报内存越界。
 
    
 
 4. user程序如何初始化kern程序中的变量达到控制效果。
+
+   
+
+5. dump出对应的源码和bpf指令，在verifier报错后可检查指令。
+
+   ```
+   llvm-objdump -S --no-show-raw-insn tp_execve.kern.o
+   ```
+
+   
+
+6. bfptool工具生成xxx.skel.h文件，解除对xxx.kern.o的依赖。程序中不用`bpf_object__load`。
