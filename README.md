@@ -75,7 +75,11 @@
     ```
     那么这个map的地址空间分配为何要使用**VM_USERMAP**这个标志呢？看到这标志就对应上这个函数`void *vmalloc_user(unsigned long size)`，看这个函数说明， 它分配一块非连续地址空间，分配的物理地址一般是不连续的，但是虚拟地址是连续的，并且将该地址空间清零，***这样该地址空间就可以被<u>映射到用户空间</u>而不会发生数据泄漏***。** 看来最核心是这个map的地址实际是在用户空间的，所以用户态程序可以进行修改。
 
-    每个map会创建一个匿名的inode。
+    
+
+5. MAP背后的fd。
+
+    每个map会创建一个匿名的inode，这个inode没有绑定到磁盘上某个文件，而仅仅在内存里，一旦fd关闭后，对应的内存空间就会被释放。
 
     ```
     int bpf_map_new_fd(struct bpf_map *map, int flags)
@@ -91,7 +95,7 @@
 
     
 
-5. dump出对应的源码和bpf指令，在verifier报错后可检查指令。
+6. dump出对应的源码和bpf指令，在verifier报错后可检查指令。
 
     ```
     llvm-objdump -S --no-show-raw-insn tp_execve.kern.o
@@ -99,7 +103,7 @@
 
     
 
-6. bfptool工具生成xxx.skel.h文件，解除对xxx.kern.o的依赖。程序中不用`bpf_object__load`。bpftool gen skeleton %.kern.o > %.skel.h。
+7. bfptool工具生成xxx.skel.h文件，解除对xxx.kern.o的依赖。程序中不用`bpf_object__load`。bpftool gen skeleton %.kern.o > %.skel.h。
 
     ```
     $(patsubst %,%.skel.h,$(APP_TAG)): $(patsubst %,%.kern.o,$(APP_TAG))
@@ -109,4 +113,4 @@
 
 
 
-7. 创建struct bpf_object*对象。加载obj文件用`bpf_object__open_file`，在skel.h中创建obj使用`bpf_object__open_mem`
+8. 创建struct bpf_object*对象。加载obj文件用`bpf_object__open_file`，在skel.h中创建obj使用`bpf_object__open_mem`
