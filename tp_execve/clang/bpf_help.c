@@ -31,6 +31,8 @@ int bpf_printf( enum libbpf_print_level level, const char* fmt, va_list args ) {
 	// if ( level == LIBBPF_DEBUG && !g_env.verbose ) {
 	// 	return 0;
 	// }
-    fprintf(stderr, "level: %d\n", level);
-	return vfprintf( stderr, fmt, args );
+    char out_fmt[128] = {0};
+    sprintf(out_fmt, "level:{%d} %s", level, fmt);
+    // vfprintf适合参数可变列表传递
+	return vfprintf( stderr, out_fmt, args );
 }

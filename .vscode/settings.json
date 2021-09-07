@@ -13,6 +13,9 @@
         "event.h": "c",
         "bpf_help.h": "c",
         "bpf_core_read.h": "c",
-        "ios": "c"
+        "ios": "c",
+        "__tree": "c",
+        "map": "c",
+        "filesystem": "c"
     }
 }
