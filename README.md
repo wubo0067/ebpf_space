@@ -114,3 +114,41 @@
 
 
 8. 创建struct bpf_object*对象。加载obj文件用`bpf_object__open_file`，在skel.h中创建obj使用`bpf_object__open_mem`
+
+
+
+9. 查看正在使用BPF Map。
+
+    ```
+    [root@Thor-CI ~]# bpftool map
+    791: hash  name execve_hash  flags 0x0
+    	key 4B  value 2600B  max_entries 1024  memlock 2670592B
+    	btf_id 655
+    792: perf_event_array  name execve_perf_evt  flags 0x0
+    	key 4B  value 4B  max_entries 128  memlock 4096B
+    793: array  name tp_execv.rodata  flags 0x480
+    	key 4B  value 9B  max_entries 1  memlock 4096B
+    	btf_id 655  frozen
+    794: array  name tp_execv.bss  flags 0x400
+    	key 4B  value 2600B  max_entries 1  memlock 4096B
+    	btf_id 655
+    ```
+
+    ```
+    [root@Thor-CI ~]# bpftool map dump name tp_execv.rodata
+    [{
+            "value": {
+                ".rodata": [{
+                        "max_args": 20
+                    },{
+                        "target_uid": 4294967295
+                    },{
+                        "ignore_failed": true
+                    }
+                ]
+            }
+        }
+    ]
+    ```
+
+    
