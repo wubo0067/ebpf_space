@@ -31,5 +31,6 @@ int bpf_printf( enum libbpf_print_level level, const char* fmt, va_list args ) {
 	// if ( level == LIBBPF_DEBUG && !g_env.verbose ) {
 	// 	return 0;
 	// }
+    fprintf(stderr, "level: %d\n", level);
 	return vfprintf( stderr, fmt, args );
 }
