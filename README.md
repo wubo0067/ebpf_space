@@ -81,37 +81,75 @@ if (mmapable) {
 	align = SHMLBA;
 	flags = VM_USERMAP;
 ```
-那么这个map的地址空间分配为何要使用**VM_USERMAP**这个标志呢？看到这标志就对应上这个函数`void *vmalloc_user(unsigned long size)`，看这个函数说明， 它分配一块非连续地址空间，分配的物理地址一般是不连续的，但是虚拟地址是连续的，并且将该地址空间清零，***这样该地址空间就可以被<u>映射到用户空间</u>而不会发生数据泄漏***。** 看来最核心是这个map的地址实际是在用户空间的，所以用户态程序可以进行修改。
+那么这个map的地址空间分配为何要使用**VM_USERMAP**这个标志呢？
 
-- ###### VM_USERMAP的使用
+- ###### 就是实现了mmap，vmalloc_user + remap_vmalloc_range
 
     * vmalloc申请一段不连续的物理地址空间，映射到连续的内核虚拟地址上。
     * vmalloc_user申请一段不连续的物理地址空间，映射到连续的虚拟地址给user space使用。疑问，这个地址是在User Addresses范围内？不在User Addresses范围，而是在Kernel Addresses范围，只是在分配的vma打上VM_USERMAP的标志。相当于在内核连续地址空间范围内标识一块范围，这个是用户空间使用的。
+    * vmalloc_user的帮助说明，用于申请一段虚拟地址连续的内存给user space使用，一般情况下这段虚拟内存是当前进程空间的，因此会给它添加一个VM_USERMAP的flag，防止将kernel space的数据泄露到user space。
     * vmalloc_user的实践，https://www.coolcou.com/linux-kernel/linux-kernel-memory-management-api/the-linux-kernel-vmalloc-user.html。看到分配的地址是大于0xffff8000000000的。还是内核地址空间。
-    * VM_USERMAP，也是配合函数remap_vmalloc_range使用的，因为这块地址是要用在User     Addresses的，所以要重新进行映射，remap_vmalloc_range - map vmalloc pages to userspace。
-    * mmap，linux内核空间到用户空间的地址映射
+    * VM_USERMAP，也是配合函数remap_vmalloc_range使用的，因为这块地址是要用在User Addresses的，所以要重新进行映射，remap_vmalloc_range - map vmalloc pages to userspace。
 
 - 小结
 
+    - 全局变量使用bpf_object__init_global_data_maps
 
+    - 这个map对应类型是BPF_MAP_TYPE_ARRAY，加上了BPF_F_MMAPABLE标志位，支持内存映射。
 
-##### MAP背后的fd。
+    - BPF_F_MMAPABLE的目的是实现内存映射的效果，让用户应用程序可以直接访问内核地址空间。用户空间和内核空间共享数据空间，数据存放在物理内存。在创建带有该标志位的MAP时，使用VM_USERMAP来分配内存
 
-每个map会创建一个匿名的inode，这个inode没有绑定到磁盘上某个文件，而仅仅在内存里，一旦fd关闭后，对应的内存空间就会被释放。
+    - 每个bpf map的mmap，首先每个bpf map有个fd。
 
-```
-int bpf_map_new_fd(struct bpf_map *map, int flags)
-{
-	int ret;
-	ret = security_bpf_map(map, OPEN_FMODE(flags));
-	if (ret < 0)
-		return ret;
-	return anon_inode_getfd("bpf-map", &bpf_map_fops, map,
-				flags | O_CLOEXEC);
-}
-```
+        ```
+        int bpf_map_new_fd(struct bpf_map *map, int flags)
+        {
+        	int ret;
+        	ret = security_bpf_map(map, OPEN_FMODE(flags));
+        	if (ret < 0)
+        		return ret;
+        	return anon_inode_getfd("bpf-map", &bpf_map_fops, map,
+        				flags | O_CLOEXEC);
+        }
+        ```
 
+        这里有个bpf_map_fops，上面绑定了fd的对应操作
 
+        ```
+        const struct file_operations bpf_map_fops = {
+        #ifdef CONFIG_PROC_FS
+        	.show_fdinfo	= bpf_map_show_fdinfo,
+        #endif
+        	.release	= bpf_map_release,
+        	.read		= bpf_dummy_read,
+        	.write		= bpf_dummy_write,
+        	.mmap		= bpf_map_mmap,
+        	.poll		= bpf_map_poll,
+        };
+        ```
+
+        bpf_map_mmap就实现了内存映射功能，调用了err = map->ops->map_mmap(map, vma);针对BPF_MAP_TYPE_ARRAY这种类型的map，.map_mmap = array_map_mmap,最终是调用了remap_vmalloc_range函数。
+
+        ```
+        static int array_map_mmap(struct bpf_map *map, struct vm_area_struct *vma)
+        {
+        	struct bpf_array *array = container_of(map, struct bpf_array, map);
+        	pgoff_t pgoff = PAGE_ALIGN(sizeof(*array)) >> PAGE_SHIFT;
+        
+        if (!(map->map_flags & BPF_F_MMAPABLE))
+        	return -EINVAL;
+        
+        if (vma->vm_pgoff * PAGE_SIZE + (vma->vm_end - vma->vm_start) >
+            PAGE_ALIGN((u64)array->map.max_entries * array->elem_size))
+        	return -EINVAL;
+        
+        return remap_vmalloc_range(vma, array_map_vmalloc_addr(array),
+        			   vma->vm_pgoff + pgoff);
+        
+        }
+        ```
+
+        
 
 ##### dump出对应的源码和bpf指令，在verifier报错后可检查指令。
 
