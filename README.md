@@ -95,7 +95,27 @@ if (mmapable) {
 
     - 全局变量使用bpf_object__init_global_data_maps
 
-    - 这个map对应类型是BPF_MAP_TYPE_ARRAY，加上了BPF_F_MMAPABLE标志位，支持内存映射。
+    - 这个map对应类型是BPF_MAP_TYPE_ARRAY，加上了BPF_F_MMAPABLE标志位，支持内存映射。.map_alloc = array_map_alloc, 
+
+        ```
+        if (attr->map_flags & BPF_F_MMAPABLE) {
+        	void *data;
+        
+        /* kmalloc'ed memory can't be mmap'ed, use explicit vmalloc */
+        data = bpf_map_area_mmapable_alloc(array_size, numa_node);
+        if (!data)
+        	return ERR_PTR(-ENOMEM);
+        array = data + PAGE_ALIGN(sizeof(struct bpf_array))
+        
+         - offsetof(struct bpf_array, value);
+        
+        }
+        ```
+
+        	if (mmapable) {
+        		BUG_ON(!PAGE_ALIGNED(size));
+        		align = SHMLBA;
+        		flags = VM_USERMAP;
 
     - BPF_F_MMAPABLE的目的是实现内存映射的效果，让用户应用程序可以直接访问内核地址空间。用户空间和内核空间共享数据空间，数据存放在物理内存。在创建带有该标志位的MAP时，使用VM_USERMAP来分配内存
 
