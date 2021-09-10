@@ -16,6 +16,8 @@
         "ios": "c",
         "__tree": "c",
         "map": "c",
-        "filesystem": "c"
+        "filesystem": "c",
+        "__node_handle": "c",
+        "execve_data.h": "c"
     }
 }

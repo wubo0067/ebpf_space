@@ -87,7 +87,7 @@ __s32 tracepoint__syscalls__sys_enter_execve( struct enter_execve_args* ctx ) {
 	uid = bpf_get_current_uid_gid();
 	id  = bpf_get_current_pid_tgid();
 	// 获取进程id
-	pid = ( pid_t ) id;
+	pid = ( pid_t ) (id & 0xffffffff);
 	// 获取线程组id
 	tgid = id >> 32;
 
@@ -118,6 +118,7 @@ __s32 tracepoint__syscalls__sys_enter_execve( struct enter_execve_args* ctx ) {
 
 	// 获取当前task_struct
 	task = ( struct task_struct* ) bpf_get_current_task();
+
 
 	// 通过task获取父进程id, 这个需要BTF，如果内核不支持BTF，那么只有直接去读取，根据地址去读
 	// event->ppid       = ( pid_t ) BPF_CORE_READ( task, real_parent, tgid );

@@ -8,10 +8,14 @@
 #ifndef __EXECVE_DATA_H_
 #define __EXECVE_DATA_H_
 
+#include <linux/types.h>
+
 struct data_t
 {
-	__u32 pid;
-	__u32 uid;
+	pid_t pid;
+    pid_t tid;    
+	uid_t uid;
+    __s32 ret;    
 	char comm[ TASK_COMM_LEN ];
 	char filename[ 32 ];
 };

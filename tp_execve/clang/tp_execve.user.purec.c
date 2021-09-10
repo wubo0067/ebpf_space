@@ -10,11 +10,11 @@
 #include <sys/time.h>
 #include <time.h>
 
-#include <bpf/bpf.h>
-#include <bpf/libbpf.h>
-#include <linux/bpf.h>
-#include <linux/ptrace.h>
-#include <trace_helpers.h>
+// #include <bpf/bpf.h>
+// #include <bpf/libbpf.h>
+// #include <linux/bpf.h>
+// #include <linux/ptrace.h>
+// #include <trace_helpers.h>
 
 #include "bpf_help.h"
 #include "event.h"
@@ -65,6 +65,7 @@ int32_t main( int32_t argc, char** argv ) {
 	}
 
 	bpf_object__for_each_program( prog, obj ) {
+        prog->log_level = 1;
 		links[ j ] = bpf_program__attach( prog );
 		if ( libbpf_get_error( links[ j ] ) ) {
 			fprintf( stderr, "%d: bpf_program__attach failed\n", j );

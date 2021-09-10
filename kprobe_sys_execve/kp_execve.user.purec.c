@@ -20,22 +20,22 @@
 
 static void print_bpf_output( void* ctx, int cpu, void* data, __u32 size ) {
 	struct data_t* d = data;
-	fprintf( stderr, "pid:%d, uid:%d, cpu:%d executing program:%s filename:[%s]\n", 
-        d->pid, d->uid, cpu, d->comm, d->filename );
+	fprintf( stderr, "pid:%d, tid:%d uid:%d, ret:%d cpu:%d executing program:%s filename:[%s]\n", 
+        d->pid, d->tid, d->uid, d->ret, cpu, d->comm, d->filename );
 }
 
 int main( int argc, char** argv ) {
 
 	struct perf_buffer_opts pb_opts = {};
-	struct bpf_link *link = NULL;
+	struct bpf_link *links[2] = {};
 	struct bpf_program *prog;
 	struct perf_buffer *pb;
 	struct bpf_object *obj;
-	int map_fd, ret = 0;
-	char filename[256];
+	int map_fd, ret = 0, j = 0;
 
-	snprintf( filename, sizeof( filename ), "%s_kern.o", argv[ 0 ] );
-	obj = bpf_object__open_file( filename, NULL );
+	const char* kern_obj = "kp_execve.kern.o";
+
+	obj = bpf_object__open_file( kern_obj, NULL );
 	if ( libbpf_get_error( obj ) ) {
 		fprintf( stderr, "ERROR: opening BPF object file failed\n" );
 		return 0;
@@ -47,25 +47,37 @@ int main( int argc, char** argv ) {
 		goto cleanup;
 	}
 
-	// find map
-	map_fd = bpf_object__find_map_fd_by_name( obj, "execve_map" );
+	// find perf event map
+	map_fd = bpf_object__find_map_fd_by_name( obj, "execve_perf_evt_map" );
 	if ( map_fd < 0 ) {
 		fprintf( stderr, "ERROR: finding a map in obj file failed\n" );
 		goto cleanup;
-	}        
+	}   
 
-	prog = bpf_object__find_program_by_name( obj, "kprobe_sys_execve" );
-	if ( !prog ) {
-		fprintf( stderr, "ERROR: finding a prog in obj file failed\n" );
-		goto cleanup;
-	}
+	bpf_object__for_each_program( prog, obj ) {
+        //prog->log_level = 1;
+		links[ j ] = bpf_program__attach( prog );
+		if ( libbpf_get_error( links[ j ] ) ) {
+			fprintf( stderr, "%d: bpf_program__attach failed\n", j );
+			links[ j ] = NULL;
+			goto cleanup;
+		}
+		fprintf( stderr, "%d bpf program attach successed\n", j );
+		j++;
+	}         
 
-	link = bpf_program__attach( prog );
-	if ( libbpf_get_error( link ) ) {
-		fprintf( stderr, "ERROR: bpf_program__attach failed\n" );
-		link = NULL;
-		goto cleanup;
-	}
+	// prog = bpf_object__find_program_by_name( obj, "kprobe_sys_execve" );
+	// if ( !prog ) {
+	// 	fprintf( stderr, "ERROR: finding a prog in obj file failed\n" );
+	// 	goto cleanup;
+	// }
+
+	// link = bpf_program__attach( prog );
+	// if ( libbpf_get_error( link ) ) {
+	// 	fprintf( stderr, "ERROR: bpf_program__attach failed\n" );
+	// 	link = NULL;
+	// 	goto cleanup;
+	// }
 
 	pb_opts.sample_cb = print_bpf_output;
 	pb                = perf_buffer__new( map_fd, 8, &pb_opts );
@@ -80,7 +92,9 @@ int main( int argc, char** argv ) {
 	}
 
 cleanup:
-	bpf_link__destroy( link );
+	for ( j--; j >= 0; j-- )
+		bpf_link__destroy( links[ j ] );
+
 	bpf_object__close( obj );
 	return 0;
 }
