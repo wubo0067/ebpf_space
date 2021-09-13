@@ -77,11 +77,10 @@ int BPF_KPROBE(probe_sys_execve, const char __user *filename,
 	bpf_get_current_comm( &data.comm, sizeof( data.comm ) );
 
 	// 读取filename参数内容
-	// struct pt_regs *real_regs = (struct pt_regs *)PT_REGS_PARM1(ctx);
-	// char * file_name = PT_REGS_PARM1_CORE(real_regs);
-	// bpf_probe_read_user_str( &data.filename, sizeof( data.filename ), file_name );
-	bpf_probe_read_user_str( &data.filename, sizeof( data.filename ), filename);
-	printk( "filenameStr:[%s]", filename );
+	const char * filename_t = (const char *)PT_REGS_PARM1(ctx);
+	bpf_probe_read_user_str( &data.filename, sizeof( data.filename ), filename_t );
+	//bpf_probe_read_user_str( &data.filename, sizeof( data.filename ), filename);
+	printk( "filenameStr:[%s]", data.filename );
 
 	if ( bpf_map_update_elem( &execve_hash, &tid, &data, BPF_NOEXIST ) ) {
 		return 0;
