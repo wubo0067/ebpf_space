@@ -1,6 +1,6 @@
 ### EBPF开发总结
 
-##### 1. 不支持BTF
+1. 不支持BTF
 
 如果在代码中有`#include <bpf/bpf_core_read.h>`，使用了`BPF_CORE_READ`宏，在user程序中`bpf_object__load`就会报如下错误。
 
@@ -14,7 +14,7 @@ failed to load BPF object: -3
 
 
 
-##### 2. BPF Verifier校验报错
+2. BPF Verifier校验报错
 
 BPF Verifier输出unbounded memory access，需要判断args空间是否足够读取ARGSIZE，没有这个判断就校验就会报错。
 
@@ -33,13 +33,13 @@ if ( ret > ARGSIZE ) {
 
 
 
-##### 3. printk校验报错
+3. printk校验报错
 
 printk( "execute:%s, event length: %u", evt->comm, len );，如果len是size_t类型，没有匹配的format，应为format只支持%d, %i, %u, %x, %ld, %li, %lu, %lx, %lld, %lli, %llu, %llx, %p, %s，所以会报内存越界。
 
  
 
-##### 4. eBPF中的全局变量
+4. eBPF中的全局变量
 
 user程序如何初始化kern程序中的变量达到控制效果。patch有个说明 [[v3,bpf-next,1/3\] bpf: add mmap() support for BPF_MAP_TYPE_ARRAY - Patchwork (ozlabs.org)](https://patchwork.ozlabs.org/project/netdev/patch/20191113031518.155618-2-andriin@fb.com/) 。
 
@@ -171,7 +171,7 @@ if (mmapable) {
 
         
 
-##### 5. dump出对应的源码和bpf指令，在verifier报错后可检查指令。
+5. dump出对应的源码和bpf指令，在verifier报错后可检查指令。
 
 ```
 llvm-objdump -S --no-show-raw-insn tp_execve.kern.o
@@ -179,7 +179,7 @@ llvm-objdump -S --no-show-raw-insn tp_execve.kern.o
 
 
 
-##### 6. bfptool工具生成xxx.skel.h文件
+6. bfptool工具生成xxx.skel.h文件
 
 解除对xxx.kern.o的依赖。程序中不用`bpf_object__load`。bpftool gen skeleton %.kern.o > %.skel.h。
 
@@ -191,13 +191,13 @@ $(patsubst %,%.skel.h,$(APP_TAG)): $(patsubst %,%.kern.o,$(APP_TAG))
 
 
 
-##### 7. open bfp kernel object。
+7. open bfp kernel object
 
 创建struct bpf_object*对象。加载obj文件用`bpf_object__open_file`，在skel.h中创建obj使用`bpf_object__open_mem`
 
 
 
-##### 8. 查看正在使用BPF Map。
+8. 查看正在使用BPF Map
 
 ```
 [root@Thor-CI ~]# bpftool map
@@ -231,3 +231,9 @@ $(patsubst %,%.skel.h,$(APP_TAG)): $(patsubst %,%.kern.o,$(APP_TAG))
 ]
 ```
 
+
+
+9. bpf_trace_prink的限制
+    - 最大只支持3个参数。
+    -  程序共享输出共享 `/sys/kernel/debug/tracing/trace_pipe` 文件 。
+    -  该实现方式在数据量大的时候，性能也存在一定的问题 。
