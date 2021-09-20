@@ -18,6 +18,13 @@
         "map": "c",
         "filesystem": "c",
         "__node_handle": "c",
-        "execve_data.h": "c"
+        "execve_data.h": "c",
+        "*.def": "c",
+        "strstream": "c",
+        "cerrno": "c",
+        "cstdarg": "c",
+        "iostream": "c",
+        "streambuf": "c",
+        "*.tcc": "c"
     }
 }

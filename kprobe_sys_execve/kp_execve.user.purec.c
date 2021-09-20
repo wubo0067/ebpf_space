@@ -83,7 +83,7 @@ int main( int argc, char** argv ) {
 	pb                = perf_buffer__new( map_fd, 8, &pb_opts );
 	ret               = libbpf_get_error( pb );
 	if ( ret ) {
-		printf( "failed to setup perf_buffer: %d\n", ret );
+		printf( "failed to setup perf_buffer: %d\n", ret );//🤣🤞
 		return 1;
 	}
 

@@ -1,0 +1,25 @@
+#!/usr/bin/bpftrace
+
+#include <linux/mm_types.h>
+#include <linux/fs.h>
+
+//struct page {
+//	unsigned long flags;
+//    // [...]
+//};
+
+BEGIN
+{
+	printf("Tracing rmap_walk_file lookups... Hit Ctrl-C to end.\n");
+	printf("%-8s %-16s %1s %-8s %-8s %-8s %-8s\n", "TIME", "COMM", "T", "flags", "mapcount", "page_type", "STACK");
+}
+
+kprobe:rmap_walk_file
+{
+	time("%H:%M:%S ");
+	if(((struct page *)arg0)->_mapcount.counter > 0) {
+		printf("%-16s R %lu %d %u %s\n", comm, ((struct page *)arg0)->flags, ((struct page *)arg0)->_mapcount.counter, 0, kstack);
+	} else {
+		printf("%-16s R %lu %d %u %s\n", comm, ((struct page *)arg0)->flags, -1, ((struct page *)arg0)->page_type, kstack);
+	}
+}
