@@ -25,6 +25,11 @@
         "cstdarg": "c",
         "iostream": "c",
         "streambuf": "c",
-        "*.tcc": "c"
+        "*.tcc": "c",
+        "workqueue.h": "c",
+        "timer.h": "c",
+        "ktime.h": "c",
+        "jiffies.h": "c",
+        "trace_common.h": "c"
     }
 }

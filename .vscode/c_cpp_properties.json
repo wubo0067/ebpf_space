@@ -4,15 +4,14 @@
             "name": "GCC",
             "includePath": [
                 "${workspaceFolder}/**",
-                "C:/mingw64/include",
-                "C:/mingw64/x86_64-w64-mingw32/include",
+                "C:/cygwin64/usr/include",
                 "E:/develope/linux/linux-5.12.9/include",
                 "E:/develope/linux/linux-5.12.9/include/uapi",
                 "E:/develope/linux/linux-5.12.9/arch/x86/include/uapi",
                 "E:/develope/linux/linux-5.12.9/arch/alpha/include",
                 "E:/develope/linux/linux-5.12.9/tools/lib",
                 "E:/develope/linux/linux-5.12.9/arch/x86/include",
-                "C:/install/cygwin64/usr/include"
+                "E:/develope/linux/linux-5.12.9/samples/bpf"
             ],
             "defines": [
                 "_DEBUG",
@@ -20,7 +19,7 @@
                 "_UNICODE"
             ],
             "windowsSdkVersion": "10.0.17763.0",
-            "compilerPath": "C:/mingw64/bin/gcc.exe",
+            "compilerPath": "C:/cygwin64/bin/gcc.exe",
             "cStandard": "c11",
             "cppStandard": "c++17",
             "intelliSenseMode": "gcc-x64"

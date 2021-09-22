@@ -1,36 +1,27 @@
 {
     "configurations": [
         {
-            "name": "Win32",
-            "includePath": [
-                "${workspaceFolder}/**"
-            ],
-            "defines": [
-                "_DEBUG",
-                "UNICODE",
-                "_UNICODE"
-            ],
-            "cStandard": "gnu17",
-            "cppStandard": "gnu++14",
-            "intelliSenseMode": "windows-gcc-x64"
-        },
-        {
-            "name": "linux",
+            "name": "GCC",
             "includePath": [
                 "${workspaceFolder}/**",
-                "E:\\develope\\linux\\linux-5.12.9\\include",
-                "E:\\develope\\linux\\linux-5.12.9\\tools\\lib",
-                "E:\\develope\\linux\\linux-5.12.9\\samples\\bpf"
+                "C:\\cygwin64\\usr\\include",
+                "E:/develope/linux/linux-5.12.9/include",
+                "E:/develope/linux/linux-5.12.9/include/uapi",
+                "E:/develope/linux/linux-5.12.9/arch/x86/include/uapi",
+                "E:/develope/linux/linux-5.12.9/arch/alpha/include",
+                "E:/develope/linux/linux-5.12.9/tools/lib",
+                "E:/develope/linux/linux-5.12.9/arch/x86/include"
             ],
             "defines": [
                 "_DEBUG",
                 "UNICODE",
                 "_UNICODE"
             ],
-            "cStandard": "gnu17",
-            "cppStandard": "gnu++14",
-            "intelliSenseMode": "linux-clang-x64",
-            "compilerPath": "C:\\install\\cygwin64\\bin\\clang"
+            "windowsSdkVersion": "10.0.17763.0",
+            "compilerPath": "C:/cygwin64/bin/gcc.exe",
+            "cStandard": "c11",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "gcc-x64"
         }
     ],
     "version": 4
