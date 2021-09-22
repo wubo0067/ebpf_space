@@ -30,6 +30,8 @@
         "timer.h": "c",
         "ktime.h": "c",
         "jiffies.h": "c",
-        "trace_common.h": "c"
+        "trace_common.h": "c",
+        "tcp_accerlerate.h": "c",
+        "tcp_accelerate.h": "c"
     }
 }

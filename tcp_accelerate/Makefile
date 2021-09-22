@@ -1,10 +1,10 @@
-APP_TAG = tcp_accerlerate
+APP_TAG = tcp_accelerate
 OUTPUT := .output
 # :前面的变量不能使用后面的变量，只能使用前面已定义好了的变量
 SRCS		= $(wildcard *.c)
 OBJS     	:= $(patsubst %.c, %.o, $(SRCS))
 
-BPF_KERN_OBJ = $(patsubst %,%.kern.o,$(APP_TAG))
+BPF_KERN_OBJS = $(APP_TAG)_bypass.kern.o $(APP_TAG)_map.kern.o
 
 BPFTOOL ?= /usr/sbin/bpftool
 CFLAGS := -g -O2 -Wall
@@ -52,7 +52,7 @@ COMMON_HELPER_OBJS = \
 	$(KERNEL_SRC)/tools/testing/selftests/bpf/trace_helpers.o
 
 .PHONY: all
-all : $(BPF_KERN_OBJ)
+all : $(BPF_KERN_OBJS)
 
 ifeq ("$(origin V)", "command line")
   VERBOSE = $(V)
@@ -73,13 +73,19 @@ $(OUTPUT):
 	$(call msg,MKDIR,$@)
 	$(Q)mkdir -p $@
 
-$(patsubst %,%.kern.o,$(APP_TAG)): $(patsubst %,%.kern.c,$(APP_TAG))
+$(APP_TAG)_bypass.kern.o: %.kern.o: %.kern.c
 	$(call msg,BPF,$@)
 	$(Q)$(CLANG) $(K_CFLAGS) -emit-llvm -Xclang -disable-llvm-passes -c $<  -o - | \
 		$(OPT) -O2 -mtriple=bpf-pc-linux | $(LLVM_DIS) | \
 		$(LLC) -march=bpf $(LLC_FLAGS) -filetype=obj -o $@	
 
+$(APP_TAG)_map.kern.o: %.kern.o: %.kern.c
+	$(call msg,BPF,$@)
+	$(Q)$(CLANG) $(K_CFLAGS) -emit-llvm -Xclang -disable-llvm-passes -c $<  -o - | \
+		$(OPT) -O2 -mtriple=bpf-pc-linux | $(LLVM_DIS) | \
+		$(LLC) -march=bpf $(LLC_FLAGS) -filetype=obj -o $@			
+
 .PHONY: clean
 clean: 
 	$(call msg, CLEANING)
-	$(Q)rm -rf $(OUTPUT) $(BPF_KERN_OBJ)
+	$(Q)rm -rf $(OUTPUT) $(BPF_KERN_OBJS)
