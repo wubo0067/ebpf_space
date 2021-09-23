@@ -1,6 +1,6 @@
 /*
- * @Author: CALM.WU 
- * @Date: 2021-09-22 17:07:38 
+ * @Author: CALM.WU
+ * @Date: 2021-09-22 17:07:38
  * @Last Modified by: CALM.WU
  * @Last Modified time: 2021-09-22 17:08:48
  */
@@ -32,10 +32,9 @@ struct sock_key {
 	__u32 dport;
 } __attribute__( ( packed ) );
 
-struct bpf_map_def __section( "maps" ) sock_ops_map = {
-	.type        = BPF_MAP_TYPE_SOCKHASH,
-	.key_size    = sizeof( struct sock_key ),
-	.value_size  = sizeof( __s32 ),
-	.max_entries = 65535,
-	.map_flags   = 0,
-};
+struct {
+	__uint( type, BPF_MAP_TYPE_SOCKHASH );
+	__uint( max_entries, 128 );
+	__type( key, struct sock_key );
+	__type( value, __s32 );
+} sock_ops_map SEC( ".maps" );

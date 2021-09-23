@@ -4,7 +4,7 @@ OUTPUT := .output
 SRCS		= $(wildcard *.c)
 OBJS     	:= $(patsubst %.c, %.o, $(SRCS))
 
-BPF_KERN_OBJS = $(APP_TAG)_bypass.kern.o $(APP_TAG)_map.kern.o
+BPF_KERN_OBJS = $(APP_TAG)_bypass.kern.o $(APP_TAG)_sockops.kern.o
 
 BPFTOOL ?= /usr/sbin/bpftool
 CFLAGS := -g -O2 -Wall
@@ -79,7 +79,7 @@ $(APP_TAG)_bypass.kern.o: %.kern.o: %.kern.c
 		$(OPT) -O2 -mtriple=bpf-pc-linux | $(LLVM_DIS) | \
 		$(LLC) -march=bpf $(LLC_FLAGS) -filetype=obj -o $@	
 
-$(APP_TAG)_map.kern.o: %.kern.o: %.kern.c
+$(APP_TAG)_sockops.kern.o: %.kern.o: %.kern.c
 	$(call msg,BPF,$@)
 	$(Q)$(CLANG) $(K_CFLAGS) -emit-llvm -Xclang -disable-llvm-passes -c $<  -o - | \
 		$(OPT) -O2 -mtriple=bpf-pc-linux | $(LLVM_DIS) | \

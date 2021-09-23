@@ -235,5 +235,45 @@ $(patsubst %,%.skel.h,$(APP_TAG)): $(patsubst %,%.kern.o,$(APP_TAG))
 
 9. bpf_trace_prink的限制
     - 最大只支持3个参数。
-    -  程序共享输出共享 `/sys/kernel/debug/tracing/trace_pipe` 文件 。
-    -  该实现方式在数据量大的时候，性能也存在一定的问题 。
+    
+    - 程序共享输出共享 `/sys/kernel/debug/tracing/trace_pipe` 文件 。
+    
+    - 该实现方式在数据量大的时候，性能也存在一定的问题 。
+    
+      
+    
+10. 创建BPF_MAP_TYPE_SOCKMAP、BPF_MAP_TYPE_SOCKHASH两种类型的map失败。
+
+    ```
+    libbpf: Error in bpf_create_map_xattr(sock_ops_map):Invalid argument(-22). Retrying without BTF.
+    libbpf: map 'sock_ops_map': failed to create: Invalid argument(-22)
+    ```
+
+    原因是内核编译时没有配置 CONFIG_BPF_STREAM_PARSER ，在代码中可以查看到
+
+    ```
+    #if defined(CONFIG_BPF_STREAM_PARSER)
+    BPF_MAP_TYPE(BPF_MAP_TYPE_SOCKMAP, sock_map_ops)
+    BPF_MAP_TYPE(BPF_MAP_TYPE_SOCKHASH, sock_hash_ops)
+    #endif
+    ```
+
+    只有使用 CONFIG_BPF_STREAM_PARSER=y重新编译内核。
+
+    
+
+11. 编译内核支持BTF、SOCKMAP、SOCKHASH
+
+     ```
+     cd linux-5.12.9/
+     cp -v /boot/config-$(uname -r) .config 
+     ```
+
+     编辑.config文件，设置以下内容
+
+     ```
+     CONFIG_DEBUG_INFO_BTF=y
+     CONFIG_BPF_STREAM_PARSER=y
+     ```
+
+     
