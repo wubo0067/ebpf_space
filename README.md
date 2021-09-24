@@ -262,18 +262,91 @@ $(patsubst %,%.skel.h,$(APP_TAG)): $(patsubst %,%.kern.o,$(APP_TAG))
 
     
 
-11. 编译内核支持BTF、SOCKMAP、SOCKHASH
+11. 编译内核支持BTF、BPF_MAP_TYPE_SOCKMAP、BPF_MAP_TYPE_SOCKHASH
+
+      ```
+      cd linux-5.12.9/
+      cp -v /boot/config-$(uname -r) .config 
+      ```
+
+      编辑.config文件，设置以下内容
+
+      ```
+      CONFIG_DEBUG_INFO_BTF=y
+      CONFIG_BPF_STREAM_PARSER=y
+      ```
+
+      内核编译、安装流程
+
+     - 安装工具， yum install rpm-devel;rpmdevtools
+
+     - **rpmdev-setuptree,  在当前用户根目录下生成rpmbuild目录**。
+     - 在源码目录执行make -j8 rpm-pkg。 [Step-by-step - Build Kernel CentOS 8 Guide - tutorialforlinux.com](https://tutorialforlinux.com/2020/12/28/step-by-step-build-kernel-centos-linux-8-guide/) 
+
+     -  删除多余的内核， yum remove $(rpm -qa | grep kernel | grep -v $(uname -r)) 
+
+
+     -  安装内核，dnf in /data/calm/rpmbuild/RPMS/x86_64/kernel*.rpm --allowerasing
+
+     安装后查看是否支持BTF、SOCKHASH、SOCKMAP，下面显示配置已经生效。
 
      ```
-     cd linux-5.12.9/
-     cp -v /boot/config-$(uname -r) .config 
-     ```
-
-     编辑.config文件，设置以下内容
-
-     ```
-     CONFIG_DEBUG_INFO_BTF=y
+     [root@Thor-CI ~]# grep BPF /boot/config-`uname -r`
+     CONFIG_CGROUP_BPF=y
+     CONFIG_BPF=y
+     CONFIG_BPF_SYSCALL=y
+     CONFIG_ARCH_WANT_DEFAULT_BPF_JIT=y
+     CONFIG_BPF_JIT_ALWAYS_ON=y
+     CONFIG_BPF_JIT_DEFAULT_ON=y
+     CONFIG_NETFILTER_XT_MATCH_BPF=m
+     CONFIG_NET_CLS_BPF=m
+     CONFIG_NET_ACT_BPF=m
+     CONFIG_BPF_JIT=y
      CONFIG_BPF_STREAM_PARSER=y
+     [root@Thor-CI ~]# cat /boot/config-5.12.9|grep BTF
+     CONFIG_DEBUG_INFO_BTF=y
+     CONFIG_PAHOLE_HAS_SPLIT_BTF=y
+     CONFIG_DEBUG_INFO_BTF_MODULES=y
      ```
 
      
+
+12. BPF_MAP_TYPE_SOCKHASH定义方式
+
+     ```
+     struct bpf_map_def SEC( "maps" ) sock_ops_map = {
+     	.type           = BPF_MAP_TYPE_SOCKHASH,
+     	.key_size       = sizeof(struct sock_key),
+     	.value_size     = sizeof(int),
+     	.max_entries    = 65535,
+     	.map_flags      = 0,
+     };
+     ```
+
+     只能用这种定义方式，如果使用下面的方式创建map时会报错：上面会创建失败，Error in bpf_create_map_xattr(sock_ops_map):ERROR: strerror_r(-524)=22(-524)
+
+     ```
+     struct {
+     	__uint( type, BPF_MAP_TYPE_SOCKHASH );
+     	__uint( max_entries, 65535 );
+     	__type( key, struct sock_key );
+     	__type( value, __s32 );
+     	__uint( map_flags, 0 );
+     	__uint( key_size, sizeof( struct sock_key ) );
+     	__uint( value_size, sizeof( __s32 ) );
+     } sock_ops_map_1 SEC( ".maps" );
+     ```
+
+     但其它类型的map却没有问题，例如BPF_MAP_TYPE_HASH，如果这样定义没有问题。这个问题需要深入研究代码。
+
+     ```
+     struct {
+     	__uint(type, BPF_MAP_TYPE_HASH);
+     	__uint(max_entries, 64);
+     	__type(key, __u32);
+     	__type(value, __u64);
+     } sockhash SEC(".maps");
+     ```
+
+     加载prog的命令：**bpftool prog load tcp_accelerate_sockops.kern.o "/sys/fs/bpf/bpf_sockops"**
+
