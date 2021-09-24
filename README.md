@@ -338,7 +338,7 @@ $(patsubst %,%.skel.h,$(APP_TAG)): $(patsubst %,%.kern.o,$(APP_TAG))
      } sock_ops_map_1 SEC( ".maps" );
      ```
 
-     但其它类型的map却没有问题，例如BPF_MAP_TYPE_HASH，如果这样定义没有问题。这个问题需要深入研究代码。
+     但其它类型的map却没有问题，例如BPF_MAP_TYPE_HASH，这种差异问题需要深入研究代码，查看内核源码是可以按上面的编写方式的。
 
      ```
      struct {
@@ -387,6 +387,8 @@ $(patsubst %,%.skel.h,$(APP_TAG)): $(patsubst %,%.kern.o,$(APP_TAG))
      相关资料
 
      [centos8使用grubby修改内核启动参数 - TinyChen's Studio](https://tinychen.com/20201118-centos8-use-grubby-modify-kernel/)
+
+     [详解Cgroup V2 | Zorro’s Linux Book (zorrozou.github.io)](https://zorrozou.github.io/docs/详解Cgroup V2.html)
 
      [Cgroup V2 Notes | Lifeng (gitee.io)](https://lifeng2221dd1.gitee.io/2020/11/12/cgroup-v2/)
 
