@@ -234,7 +234,7 @@ $(patsubst %,%.skel.h,$(APP_TAG)): $(patsubst %,%.kern.o,$(APP_TAG))
 
 
 9. #### bpf_trace_prink的限制
-    
+   
     - 最大只支持3个参数。
     
     - 程序共享输出共享 `/sys/kernel/debug/tracing/trace_pipe` 文件 。
@@ -288,9 +288,9 @@ $(patsubst %,%.skel.h,$(APP_TAG)): $(patsubst %,%.kern.o,$(APP_TAG))
 
 
      -  安装内核，dnf in /data/calm/rpmbuild/RPMS/x86_64/kernel*.rpm --allowerasing
-
+    
      安装后查看是否支持BTF、SOCKHASH、SOCKMAP，下面显示配置已经生效。
-
+    
      ```
      [root@Thor-CI ~]# grep BPF /boot/config-`uname -r`
      CONFIG_CGROUP_BPF=y
@@ -310,7 +310,8 @@ $(patsubst %,%.skel.h,$(APP_TAG)): $(patsubst %,%.kern.o,$(APP_TAG))
      CONFIG_DEBUG_INFO_BTF_MODULES=y
      ```
 
-     
+
+​     
 
 12. #### BPF_MAP_TYPE_SOCKHASH定义方式
 
@@ -391,4 +392,52 @@ $(patsubst %,%.skel.h,$(APP_TAG)): $(patsubst %,%.kern.o,$(APP_TAG))
      [详解Cgroup V2 | Zorro’s Linux Book (zorrozou.github.io)](https://zorrozou.github.io/docs/详解Cgroup V2.html)
 
      [Cgroup V2 Notes | Lifeng (gitee.io)](https://lifeng2221dd1.gitee.io/2020/11/12/cgroup-v2/)
+    
+    
+    
+14. #### SEC("name")和prog _type、attach_type关系
+
+    文件libbpf.c中定义了name和prog_type与attach_type的对应关系。部分如下。
+
+    ```
+    static const *struct* bpf_sec_def section_defs[] = {
+      BPF_PROG_SEC("socket",     BPF_PROG_TYPE_SOCKET_FILTER),
+      BPF_PROG_SEC("sk_reuseport",    BPF_PROG_TYPE_SK_REUSEPORT),
+      SEC_DEF("kprobe/", KPROBE,	.attach_fn = attach_kprobe),
+      BPF_APROG_SEC("sockops",    BPF_PROG_TYPE_SOCK_OPS,	BPF_CGROUP_SOCK_OPS),
+    };
+    ```
+
+15. #### ebpf的所有hooks
+
+    查看完成的ebpf hooks列表，文件/uapi/linux/bpf.h中，枚举类型*enum* bpf_attach_type 就是所有的hook点。在libbpf.c代码中通过函数libbpf_prog_type_by_name传入sec name可以获取对应的prog type和attach type。
+
+    ```
+    (gdb) p sec_name
+    $5 = 0x872f70 "sockops"
+    (gdb) n
+    1518			bpf_program__set_ifindex(pos, ifindex);
+    (gdb) p pos
+    $6 = (struct bpf_program *) 0x872e90
+    (gdb) p ifindex
+    $7 = 0
+    (gdb) p expected_attach_type
+    $8 = BPF_CGROUP_SOCK_OPS
+    (gdb) p prog_type
+    $9 = BPF_PROG_TYPE_SOCK_OPS
+    ```
+
+    上面的gdb调试结果可清晰的显示这种关系。
+
+    这篇文章对prog type有详细的说明，[BPF: A Tour of Program Types (oracle.com)](https://blogs.oracle.com/linux/post/bpf-a-tour-of-program-types)
+
+    
+
+16. #### ebpf对象持久化，文件系统/sys/fs/bpf
+
+    [Persistent BPF objects [LWN.net\]](https://lwn.net/Articles/664688/)
+
+    一般我们会编写一个user space的程序来加载kern的prog，这样ebpf程序的生命周期和用户态程序一致，监控采集显示的程序基本如此。可有些模式下的prog程序是需要类似守护，例如流量控制，转发控制这些，所以在kernel4.4版本提供了持久化能力。会创建一个pin fd在该文件系统下，这个fd就代表一个ebpf object。如果要unpin这个ebpf object，可以直接删除这个文件。
+
+
 
