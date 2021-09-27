@@ -439,5 +439,22 @@ $(patsubst %,%.skel.h,$(APP_TAG)): $(patsubst %,%.kern.o,$(APP_TAG))
 
     一般我们会编写一个user space的程序来加载kern的prog，这样ebpf程序的生命周期和用户态程序一致，监控采集显示的程序基本如此。可有些模式下的prog程序是需要类似守护，例如流量控制，转发控制这些，所以在kernel4.4版本提供了持久化能力。会创建一个pin fd在该文件系统下，这个fd就代表一个ebpf object。如果要unpin这个ebpf object，可以直接删除这个文件。
 
+    `mount(type, target, type, 0, "mode=0700"))`
+
+    target是/sys/fs/bpf，type是bpf。
+
+    ```
+    err = bpf_obj_pin(bpf_program__fd(prog), pinfile);
+    err = bpf_object__pin_maps(obj, pinmaps);
+    ```
+
+    使用bpftool命令来持久化ebpf object
+
+    ```
+    bpftool prog load tcp_accelerate_sockops.kern.o "/sys/fs/bpf/bpf_sockops"
+    ```
+
+    
+
 
 
