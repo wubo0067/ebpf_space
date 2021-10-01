@@ -385,12 +385,14 @@ $(patsubst %,%.skel.h,$(APP_TAG)): $(patsubst %,%.kern.o,$(APP_TAG))
      tmpfs on /usr/local/aegis/cgroup type tmpfs (rw,relatime,size=51200k)
      ```
 
-     相关资料
+    **bpftool cgroup是依赖cgroup v2的**。 
+
+    相关资料
 
      [centos8使用grubby修改内核启动参数 - TinyChen's Studio](https://tinychen.com/20201118-centos8-use-grubby-modify-kernel/)
 
      [详解Cgroup V2 | Zorro’s Linux Book (zorrozou.github.io)](https://zorrozou.github.io/docs/详解Cgroup V2.html)
-
+    
      [Cgroup V2 Notes | Lifeng (gitee.io)](https://lifeng2221dd1.gitee.io/2020/11/12/cgroup-v2/)
     
     
@@ -452,6 +454,20 @@ $(patsubst %,%.skel.h,$(APP_TAG)): $(patsubst %,%.kern.o,$(APP_TAG))
 
     ```
     bpftool prog load tcp_accelerate_sockops.kern.o "/sys/fs/bpf/bpf_sockops"
+    ```
+
+    
+
+17. #### kernel_src/samples/bpf，tools/bpf/bpftool 代码编译
+
+    ```
+    cp /boot/config-`uname -r` ./.config
+    make scripts
+    make headers_install
+    make M=samples/bpf V=1
+    cd tools/bpf/bpftool
+    make V=1
+    make install
     ```
 
     
