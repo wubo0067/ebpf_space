@@ -282,8 +282,18 @@ $(patsubst %,%.skel.h,$(APP_TAG)): $(patsubst %,%.kern.o,$(APP_TAG))
      - 安装工具， yum install rpm-devel;rpmdevtools
 
      - **rpmdev-setuptree,  在当前用户根目录下生成rpmbuild目录**。
+    
      - 在源码目录执行make -j8 rpm-pkg。 [Step-by-step - Build Kernel CentOS 8 Guide - tutorialforlinux.com](https://tutorialforlinux.com/2020/12/28/step-by-step-build-kernel-centos-linux-8-guide/) 
-
+    
+       ```
+       make mrproper    //会把以前进行过的内核功能文件也删除掉，几乎只有在第一次执行内核编译前才会进行这个操作
+       make clean    //仅会删除类似目标文件之类的编译过程产生的中间文件，而不会删除配置文件
+       make vmlinux    //未经压缩的内核；常见的/boot下的内核文件都是经过压缩的
+       make bzImage    //编译内核，经过压缩的内核
+       make modules    //编译内核模块
+       make all    //进行上述三个操作
+       ```
+    
      -  删除多余的内核， yum remove $(rpm -qa | grep kernel | grep -v $(uname -r)) 
 
 
@@ -325,7 +335,7 @@ $(patsubst %,%.skel.h,$(APP_TAG)): $(patsubst %,%.kern.o,$(APP_TAG))
      };
      ```
 
-     只能用这种定义方式，如果使用下面的方式创建map时会报错：上面会创建失败，Error in bpf_create_map_xattr(sock_ops_map):ERROR: strerror_r(-524)=22(-524)
+     上面的定义方式能**正确运行**，如果使用下面的方式创建map时会报错：Error in bpf_create_map_xattr(sock_ops_map):ERROR: strerror_r(-524)=22(-524)。
 
      ```
      struct {
@@ -392,11 +402,11 @@ $(patsubst %,%.skel.h,$(APP_TAG)): $(patsubst %,%.kern.o,$(APP_TAG))
      [centos8使用grubby修改内核启动参数 - TinyChen's Studio](https://tinychen.com/20201118-centos8-use-grubby-modify-kernel/)
 
      [详解Cgroup V2 | Zorro’s Linux Book (zorrozou.github.io)](https://zorrozou.github.io/docs/详解Cgroup V2.html)
-    
+
      [Cgroup V2 Notes | Lifeng (gitee.io)](https://lifeng2221dd1.gitee.io/2020/11/12/cgroup-v2/)
+
     
-    
-    
+
 14. #### SEC("name")和prog _type、attach_type关系
 
     文件libbpf.c中定义了name和prog_type与attach_type的对应关系。部分如下。
@@ -456,21 +466,64 @@ $(patsubst %,%.skel.h,$(APP_TAG)): $(patsubst %,%.kern.o,$(APP_TAG))
     bpftool prog load tcp_accelerate_sockops.kern.o "/sys/fs/bpf/bpf_sockops"
     ```
 
+    执行上面命令，可以观察到
+
+    ```
+    [root@192 linux]# bpftool prog
+    8: sock_ops  name bpf_sockops_v4  tag 532c5c6d79f1461d  gpl
+    	loaded_at 2021-10-01T14:26:57+0800  uid 0
+    	xlated 936B  jited 533B  memlock 4096B  map_ids 6
+    	btf_id 4
+    ```
+
+    执行下面命令，prog也会被删除。
+
+    ```
+    [root@192 tcp_accelerate]# rm /sys/fs/bpf/bpf_sockops
+    rm: remove regular empty file '/sys/fs/bpf/bpf_sockops'? y
+    ```
+
     
 
 17. #### kernel_src/samples/bpf，tools/bpf/bpftool 代码编译
 
     ```
+    rpm -ivh kernel-4.18.0-305.el8.src.rpm
+    xz -d linux-4.18.0-305.el8.tar.xz
+    tar -xvf linux-4.18.0-305.el8.tar -C /usr/src
     cp /boot/config-`uname -r` ./.config
     make scripts
-    make headers_install
+    make headers_install 					# /usr/include/linux
     make M=samples/bpf V=1
     cd tools/bpf/bpftool
     make V=1
     make install
     ```
 
+    在编译时报错，遇到
+
+    ```
+    ./include/linux/page-flags-layout.h:6:10: fatal error: 'generated/bounds.h' file not found
+    ./include/linux/jiffies.h:13:10: fatal error: 'generated/timeconst.h' file not found
+    ```
+
+    先执行下make -j 4，编译下内核源码，这些文件就会生成
+
     
+
+18. #### ebpf程序的安全性
+
+    - 字节码只能够调用一小部分指定的 eBPF 帮助函数
+    
+    - BPF程序不允许包含无法到达的指令，防止加载无效代码，延迟程序的终止。
+    
+    - eBPF 程序中循环次数限制且必须在有限时间内结束。
+    
+      
+    
+19. #### bpf kernel helper函数
+
+    uapi/linux/bpf.h文件中，*enum* bpf_func_id定义的都是可直接调用的helper functions。
 
 
 

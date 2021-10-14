@@ -32,7 +32,9 @@ The SK_MSG program 在调用sendmsg时被执行
 SEC( "sk_msg" )
 __s32 bpf_tcpip_bypass( struct sk_msg_md* msg ) {
 	struct sock_key key = {};
+	// 从socket metadata中提取key
 	sk_msg_extractv4_key( msg, &key );
+	// 调用bpf_msg_redirect_hash寻找对应的socket，并根据flag，将数据重定向到socket的某个queue
 	bpf_msg_redirect_hash( msg, &sock_ops_map, &key, BPF_F_INGRESS );
 	return SK_PASS;
 }

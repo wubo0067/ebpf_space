@@ -36,7 +36,7 @@ static inline void bpf_sock_ops_ipv4( struct bpf_sock_ops* skops ) {
 	if ( ret != 0 ) {
 		printk( "FAILED: sock_hash_update ret: %d\n", ret );
 	} else {
-		printk( "remote-ip = %d, local-ip = %d\n", bpf_htonl( skops->remote_ip4 ), bpf_htonl( skops->local_ip4 ) );
+		printk( "remote-ip = %u, local-ip = %u\n", bpf_htonl( skops->remote_ip4 ), bpf_htonl( skops->local_ip4 ) );
 
 		printk( "<<< ipv4 op = %d, local-port %d --> remote-port %d\n", skops->op, skops->local_port,
 		    bpf_ntohl( skops->remote_port ) );
@@ -54,8 +54,8 @@ __s32 bpf_sockops_v4( struct bpf_sock_ops* skops ) {
 	op     = skops->op;
 
 	switch ( op ) {
-		case BPF_SOCK_OPS_PASSIVE_ESTABLISHED_CB: // 被动建立连接
-		case BPF_SOCK_OPS_ACTIVE_ESTABLISHED_CB:  // 主动建立连接
+		case BPF_SOCK_OPS_PASSIVE_ESTABLISHED_CB: // 被动建立连接，目的端发送SYN+ACK会命中
+		case BPF_SOCK_OPS_ACTIVE_ESTABLISHED_CB:  // 主动建立连接，源端发送SYN会命中
 			if ( family == AF_INET ) {
 				bpf_sock_ops_ipv4( skops );
 			}
