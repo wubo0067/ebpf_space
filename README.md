@@ -88,7 +88,7 @@ if (mmapable) {
     * vmalloc申请一段不连续的物理地址空间，映射到连续的内核虚拟地址上。
     * vmalloc_user申请一段不连续的物理地址空间，映射到连续的虚拟地址给user space使用。疑问，这个地址是在User Addresses范围内？不在User Addresses范围，而是在Kernel Addresses范围，只是在分配的vma打上VM_USERMAP的标志。相当于在内核连续地址空间范围内标识一块范围，这个是用户空间使用的。
     * vmalloc_user的帮助说明，用于申请一段虚拟地址连续的内存给user space使用，一般情况下这段虚拟内存是当前进程空间的，因此会给它添加一个VM_USERMAP的flag，防止将kernel space的数据泄露到user space。
-    * vmalloc_user的实践，https://www.coolcou.com/linux-kernel/linux-kernel-memory-management-api/the-linux-kernel-vmalloc-user.html。看到分配的地址是大于0xffff8000000000的。还是内核地址空间。
+    * vmalloc_user的实践。看到分配的地址是大于0xffff8000000000的，还是内核地址空间。https://www.coolcou.com/linux-kernel/linux-kernel-memory-management-api/the-linux-kernel-vmalloc-user.html
     * VM_USERMAP，也是配合函数remap_vmalloc_range使用的，因为这块地址是要用在User Addresses的，所以要重新进行映射，remap_vmalloc_range - map vmalloc pages to userspace。
 
 - 小结
