@@ -294,34 +294,30 @@ $(patsubst %,%.skel.h,$(APP_TAG)): $(patsubst %,%.kern.o,$(APP_TAG))
        make all    //进行上述三个操作
        ```
     
-     -  删除多余的内核， yum remove $(rpm -qa | grep kernel | grep -v $(uname -r)) 
-
-
-     -  安装内核，dnf in /data/calm/rpmbuild/RPMS/x86_64/kernel*.rpm --allowerasing
+     - 删除多余的内核， yum remove $(rpm -qa | grep kernel | grep -v $(uname -r)) 
     
-     安装后查看是否支持BTF、SOCKHASH、SOCKMAP，下面显示配置已经生效。
+     - 安装内核，dnf in /data/calm/rpmbuild/RPMS/x86_64/kernel*.rpm --allowerasing，安装后查看是否支持BTF、SOCKHASH、SOCKMAP，下面显示配置已经生效。
     
-     ```
-     [root@Thor-CI ~]# grep BPF /boot/config-`uname -r`
-     CONFIG_CGROUP_BPF=y
-     CONFIG_BPF=y
-     CONFIG_BPF_SYSCALL=y
-     CONFIG_ARCH_WANT_DEFAULT_BPF_JIT=y
-     CONFIG_BPF_JIT_ALWAYS_ON=y
-     CONFIG_BPF_JIT_DEFAULT_ON=y
-     CONFIG_NETFILTER_XT_MATCH_BPF=m
-     CONFIG_NET_CLS_BPF=m
-     CONFIG_NET_ACT_BPF=m
-     CONFIG_BPF_JIT=y
-     CONFIG_BPF_STREAM_PARSER=y
-     [root@Thor-CI ~]# cat /boot/config-5.12.9|grep BTF
-     CONFIG_DEBUG_INFO_BTF=y
-     CONFIG_PAHOLE_HAS_SPLIT_BTF=y
-     CONFIG_DEBUG_INFO_BTF_MODULES=y
-     ```
-
-
-​     
+       ```
+        [root@Thor-CI ~]# grep BPF /boot/config-`uname -r`
+        CONFIG_CGROUP_BPF=y
+        CONFIG_BPF=y
+        CONFIG_BPF_SYSCALL=y
+        CONFIG_ARCH_WANT_DEFAULT_BPF_JIT=y
+        CONFIG_BPF_JIT_ALWAYS_ON=y
+        CONFIG_BPF_JIT_DEFAULT_ON=y
+        CONFIG_NETFILTER_XT_MATCH_BPF=m
+        CONFIG_NET_CLS_BPF=m
+        CONFIG_NET_ACT_BPF=m
+        CONFIG_BPF_JIT=y
+        CONFIG_BPF_STREAM_PARSER=y
+        [root@Thor-CI ~]# cat /boot/config-5.12.9|grep BTF
+        CONFIG_DEBUG_INFO_BTF=y
+        CONFIG_PAHOLE_HAS_SPLIT_BTF=y
+        CONFIG_DEBUG_INFO_BTF_MODULES=y
+       ```
+    
+       
 
 12. #### BPF_MAP_TYPE_SOCKHASH定义方式
 
@@ -420,6 +416,8 @@ $(patsubst %,%.skel.h,$(APP_TAG)): $(patsubst %,%.kern.o,$(APP_TAG))
     };
     ```
 
+    
+
 15. #### ebpf的所有hooks
 
     查看完成的ebpf hooks列表，文件/uapi/linux/bpf.h中，枚举类型*enum* bpf_attach_type 就是所有的hook点。在libbpf.c代码中通过函数libbpf_prog_type_by_name传入sec name可以获取对应的prog type和attach type。
@@ -514,16 +512,22 @@ $(patsubst %,%.skel.h,$(APP_TAG)): $(patsubst %,%.kern.o,$(APP_TAG))
 18. #### ebpf程序的安全性
 
     - 字节码只能够调用一小部分指定的 eBPF 帮助函数
-    
+
     - BPF程序不允许包含无法到达的指令，防止加载无效代码，延迟程序的终止。
-    
+
     - eBPF 程序中循环次数限制且必须在有限时间内结束。
-    
+
       
-    
+
 19. #### bpf kernel helper函数
 
     uapi/linux/bpf.h文件中，*enum* bpf_func_id定义的都是可直接调用的helper functions。
+
+    
+
+20. #### bpf libbpf函数api
+
+    [LIBBPF API — libbpf documentation](https://libbpf.readthedocs.io/en/latest/api.html)
 
 
 
