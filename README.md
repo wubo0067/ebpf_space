@@ -35,7 +35,14 @@ if ( ret > ARGSIZE ) {
 
 3. #### printk校验报错
 
-printk( "execute:%s, event length: %u", evt->comm, len );，如果len是size_t类型，没有匹配的format，应为format只支持%d, %i, %u, %x, %ld, %li, %lu, %lx, %lld, %lli, %llu, %llx, %p, %s，所以会报内存越界。
+printk( "execute:%s, event length: %u", evt->comm, len );，如果len是size_t类型，没有匹配的format，应为format只支持%d %i %u %x %ld %li %lu %lx %lld %lli %llu %llx %p %pB %pks %pus %s，所以会报内存越界。
+
+bpftrace.c:428。最多只能有三个参数。
+
+```
+if (fmt_cnt >= 3)
+​      return -EINVAL;
+```
 
  
 
@@ -538,7 +545,7 @@ $(patsubst %,%.skel.h,$(APP_TAG)): $(patsubst %,%.kern.o,$(APP_TAG))
     
     
     
-21. **bpf_map_update_elem**
+21. #### **bpf_map_update_elem**
 
      BPF_ANY：0，表示如果元素存在，内核将更新元素；如果不存在，则在映射中创建该元素。
 
@@ -549,6 +556,64 @@ $(patsubst %,%.skel.h,$(APP_TAG)): $(patsubst %,%.kern.o,$(APP_TAG))
      内核头文件bpf/bpf_helpers.h，用户空间程序头文件tools/lib/bpf/bpf.h
 
      用户空间修改映射，区别在于第一个参数改为文件描述符来访问。
+    
+    
+    
+22. #### bpf_get_current_comm和bpf_get_current_task，拷贝comm获取的区别
+
+     
+
+23. #### SEC("perf_event")
+
+     Perf事件程序将BPF代码附加到Perf事件上。Perf事件程序类型定义为BPF_PROG_SEC("perf_event",   BPF_PROG_TYPE_PERF_EVENT)，Perf是内核的内部分析器，可以产生硬件和软件的性能数据事件。我们可以用Perf事件程序监控很多系统信息，从计算机的CPU到系统中运行的任何软件。当BPF程序附加到Perf事件上时，每次Perf产生分析数据时，程序代码都将被执行。
+    
+    
+    
+24. #### bpf_get_stackid进程的堆栈，包括user-stack和kernel-stack
+
+    - 应用程序的函数地址转换为symbols name。查看程序elf格式的section，所有symbols信息保存在.symtab 表中。
+
+       ```
+       readelf --section-headers ./cachestat_cli
+       readelf --syms ./cachestat_cli
+       ```
+
+       ebf可以获取用户态堆栈的函数地址，这里需要将地址转换为函数名。
+
+    - 基于软件事件**PERF_TYPE_SOFTWARE**，config描述
+
+       PERF_COUNT_SW_CPU_CLOCK：它报告CPU时钟，即每个CPU的高分辨率计时器，进程堆栈采集使用该事件。
+
+       PERF_COUNT_SW_PAGE_FAULTS：这将报告页面错误数
+
+    - perf_event_open函数参数
+
+       pid == 0 && cpu == -1：这可以测量任何CPU上的调用进程/线程。
+
+       pid == 0 && cpu >= 0：仅当在指定的CPU上运行时，才测量调用进程/线程。
+
+       pid > 0 && cpu == -1：这将测量任何CPU上的指定进程/线程。
+
+       pid > 0 && cpu >= 0：仅当在指定的CPU上运行时，才测量指定的进程/线程。
+
+       pid == -1 && cpu >= 0：这将测量指定CPU上的所有进程/线程。这需要CAP_SYS_ADMIN功能或/ proc / sys / kernel / perf_event_paranoid值小于1。
+
+       pid == -1 && cpu == -1：此设置无效，将返回错误。
+    
+    - 用户空间栈帧的内存地址到函数名转换。
+    
+      BPF_F_USER_STACK标志可以获取用户空间堆栈列表，栈帧中保存的都是虚拟内存地址，将地址转变为源代码中的函数名（demangle）。
+    
+      - /proc/pid/maps文件。虚拟地址在该文件列出的范围里。六列的信息依次为：本段在虚拟内存中的地址范围、本段的权限、偏移地址，即指本段映射地址在文件中的偏移、主设备号与次设备号、文件索引节点号、映射的文件名。kernel会将elf的代码段、数据段映射到虚拟地址空间。
+      - 函数名在elf文件中，核心是**elf格式和vma之间的关系**，找到这种对应关系才能通过地址找到函数名。
+      - elf是section，maps是segment，前者是链接视角，后者是运行视角。比如代码在链接时放到了text代码段，这个段就是section，同理还有data、bss等，可当执行文件被加载到进程VM中的不同区域时，这个段就是segment了。
+      - readelf -l /usr/libexec/netdata/plugins.d/apps.plugin，elf中**只有PT_LOAD段才会被加载到VMA中**。通过这个命令可以看到那些段被加载。
+      - [Linux ELF文件和VMA间的关系_月出皎兮。 佼人僚兮。 舒窈纠兮。 劳心悄兮。-CSDN博客](https://blog.csdn.net/rockrockwu/article/details/81707909)，[c - relationship between VMA and ELF segments - Stack Overflow](https://stackoverflow.com/questions/33756119/relationship-between-vma-and-elf-segments)
+      - segment和VMA并不是一一对应的关系，一个segment可能对应多个VMA。这是由segment中的section属性决定的。
+      - bcc中的实现，bcc_syms.h，bcc_symcache_resolve。
+      - readelf -s 第一列地址是It's (relative) virtual address
+    
+      
 
 
 
