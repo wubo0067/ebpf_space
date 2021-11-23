@@ -499,29 +499,32 @@ $(patsubst %,%.skel.h,$(APP_TAG)): $(patsubst %,%.kern.o,$(APP_TAG))
 
 17. #### kernel_src/samples/bpf，tools/bpf/bpftool 代码编译
 
-    ```
-    rpm -ivh kernel-4.18.0-305.el8.src.rpm
-    xz -d linux-4.18.0-305.el8.tar.xz
-    tar -xvf linux-4.18.0-305.el8.tar -C /usr/src
-    cp /boot/config-`uname -r` ./.config
-    make scripts
-    make headers_install 					# /usr/include/linux
-    make M=samples/bpf V=1
-    cd tools/bpf/bpftool
-    make V=1
-    make install
-    ```
+     在[RPM Search (pbone.net)](http://rpm.pbone.net/)搜索源码rpm包，或[Index of /Linux/cern/centos/7/updates/Source/SPackages (riken.jp)](http://ftp.riken.jp/Linux/cern/centos/7/updates/Source/SPackages/)这个网站。
 
-    在编译时报错，遇到
+     ```
+     rpm2cpio kernel-4.18.0-305.el8.src.rpm | cpio -idmv
+     rpm -ivh kernel-4.18.0-305.el8.src.rpm
+     xz -d linux-4.18.0-305.el8.tar.xz
+     tar -xvf linux-4.18.0-305.el8.tar -C /usr/src
+     cp /boot/config-`uname -r` ./.config
+     make scripts
+     make headers_install 					# /usr/include/linux
+     make M=samples/bpf V=1
+     cd tools/bpf/bpftool
+     make V=1
+     make install
+     ```
 
-    ```
-    ./include/linux/page-flags-layout.h:6:10: fatal error: 'generated/bounds.h' file not found
-    ./include/linux/jiffies.h:13:10: fatal error: 'generated/timeconst.h' file not found
-    ```
+     在编译时报错，遇到
 
-    先执行下make -j 4，编译下内核源码，这些文件就会生成
+     ```
+     ./include/linux/page-flags-layout.h:6:10: fatal error: 'generated/bounds.h' file not found
+     ./include/linux/jiffies.h:13:10: fatal error: 'generated/timeconst.h' file not found
+     ```
 
-    
+     先执行下make -j 4，编译下内核源码，这些文件就会生成
+
+     
 
 18. #### ebpf程序的安全性
 
