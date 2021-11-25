@@ -1,8 +1,8 @@
 ### EBPF开发总结
 
-1. #### 不支持BTF
+1. #### 编译内核支持BTF
 
-如果在代码中有`#include <bpf/bpf_core_read.h>`，使用了`BPF_CORE_READ`宏，在user程序中`bpf_object__load`就会报如下错误。
+​		如果在代码中有`#include <bpf/bpf_core_read.h>`，使用了`BPF_CORE_READ`宏，在user程序中`bpf_object__load`就会报如下错误。
 
 ```
 libbpf: failed to find valid kernel BTF
@@ -11,6 +11,28 @@ libbpf: failed to load object 'tp_execve_kern'
 libbpf: failed to load BPF skeleton 'tp_execve_kern': -3
 failed to load BPF object: -3
 ```
+
+​		BTF，即BPF Type Format，类似于类似于DWARF调试信息，但是没有那么generic和verbose。它是一种空间高效的、紧凑的、有足够表达能力的格式，足以描述C程序的所有类型信息。由于它的简单性和BPF去重算法，对比DWARF，BTF能够缩小100x的尺寸。现在，在运行时总是保留BTF信息是常见做法，它对应内核选项 CONFIG_DEBUG_INFO_BTF=y。
+
+​		BTF能够用来增强BPF verifier的能力，能够允许BPF代码直接访问内核内存，不需要 bpf_probe_read()。
+
+​		编译支持BTF的内核。
+
+- .config文件设置CONFIG_DEBUG_INFO_BTF=y
+
+- 安装dwarves。**yum -y install libdwarves1.x86_64 dwarves.x86_64**
+
+- 安装**pahole**。
+
+  ```
+  git clone https://git.kernel.org/pub/scm/devel/pahole/pahole.git
+  git checkout v1.19
+  cmake -D__LIB="lib" -DCMAKE_INSTALL_PREFIX="/usr/local" -DEXEC_INSTALL_PREFIX="" .
+  make
+  make install
+  ```
+
+- 在内核源码执行make vmlinux。
 
 
 
@@ -536,18 +558,16 @@ $(patsubst %,%.skel.h,$(APP_TAG)): $(patsubst %,%.kern.o,$(APP_TAG))
 
       
 
-19. #### bpf kernel helper函数
+19. #### bpfr函数
 
-    uapi/linux/bpf.h文件中，*enum* bpf_func_id定义的都是可直接调用的helper functions。
+     内核：uapi/linux/bpf.h、tools/lib/bpf/bpf_helper_defs.h 文件中，*enum* bpf_func_id定义的都是可直接调用的helper functions。
 
-    
+     用户：[LIBBPF API — libbpf documentation](https://libbpf.readthedocs.io/en/latest/api.html)
 
-20. #### bpf libbpf函数api
+     CO-RE：tools/lib/bpf/bpf_core_read.h
 
-    [LIBBPF API — libbpf documentation](https://libbpf.readthedocs.io/en/latest/api.html)
-    
-    
-    
+     
+
 21. #### **bpf_map_update_elem**
 
      BPF_ANY：0，表示如果元素存在，内核将更新元素；如果不存在，则在映射中创建该元素。
@@ -560,19 +580,15 @@ $(patsubst %,%.skel.h,$(APP_TAG)): $(patsubst %,%.kern.o,$(APP_TAG))
 
      用户空间修改映射，区别在于第一个参数改为文件描述符来访问。
     
-    
-    
-22. #### bpf_get_current_comm和bpf_get_current_task，拷贝comm获取的区别
-
      
-
+    
 23. #### SEC("perf_event")
 
      Perf事件程序将BPF代码附加到Perf事件上。Perf事件程序类型定义为BPF_PROG_SEC("perf_event",   BPF_PROG_TYPE_PERF_EVENT)，Perf是内核的内部分析器，可以产生硬件和软件的性能数据事件。我们可以用Perf事件程序监控很多系统信息，从计算机的CPU到系统中运行的任何软件。当BPF程序附加到Perf事件上时，每次Perf产生分析数据时，程序代码都将被执行。
     
     
     
-24. #### bpf_get_stackid进程的堆栈，包括user-stack和kernel-stack
+24. #### bpf_get_stackid获取进程用户态、内核态堆栈
 
     - 应用程序的函数地址转换为symbols name。查看程序elf格式的section，所有symbols信息保存在.symtab 表中。
 
@@ -643,9 +659,11 @@ $(patsubst %,%.skel.h,$(APP_TAG)): $(patsubst %,%.kern.o,$(APP_TAG))
         7f52ff949000-7f52ff94b000 rw-p 001bf000 fd:00 7445                       /usr/lib64/libc-2.28.so
         ```
       
+    
+    23. #### 解除对内核代码头文件的依赖
+    
+        ```
+        bpftool btf dump file /sys/kernel/btf/vmlinux format c > vmlinux.h
+        ```
+    
         
-      
-      
-
-
-
