@@ -666,4 +666,21 @@ $(patsubst %,%.skel.h,$(APP_TAG)): $(patsubst %,%.kern.o,$(APP_TAG))
         bpftool btf dump file /sys/kernel/btf/vmlinux format c > vmlinux.h
         ```
     
+    24. #### selinux和bfptool命令冲突
+    
+        执行bpftool报错
+    
+        ```
+        root@localhost pahole]# bpftool prog show
+        Error: can't get prog by id (794): Permission denied
+        [root@localhost pahole]# bpftool map show
+        ```
+    
+        解决方式，执行下面的命令
+    
+        ```
+        ausearch -c 'bpftool' --raw | audit2allow -M my-bpftool
+        semodule -X 300 -i my-bpftool.pp
+        ```
+    
         
