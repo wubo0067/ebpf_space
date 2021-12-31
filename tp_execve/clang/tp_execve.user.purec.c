@@ -65,8 +65,8 @@ int32_t main( int32_t argc, char** argv ) {
 	}
 
 	bpf_object__for_each_program( prog, obj ) {
-        prog->log_level = 1;
-		links[ j ] = bpf_program__attach( prog );
+		prog->log_level = 1;
+		links[ j ]      = bpf_program__attach( prog );
 		if ( libbpf_get_error( links[ j ] ) ) {
 			fprintf( stderr, "%d: bpf_program__attach failed\n", j );
 			links[ j ] = NULL;
@@ -92,8 +92,7 @@ int32_t main( int32_t argc, char** argv ) {
 	}
 
 	// loop perf event
-	while ( ( err = perf_buffer__poll( pb, 100 ) ) >= 0 ) {
-	}
+	while ( ( err = perf_buffer__poll( pb, 100 ) ) >= 0 ) { }
 	printf( "Error polling perf buffer: %d\n", err );
 
 cleanup:

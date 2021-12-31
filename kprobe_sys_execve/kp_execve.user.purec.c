@@ -80,6 +80,7 @@ int main( int argc, char** argv ) {
 	// }
 
 	pb_opts.sample_cb = print_bpf_output;
+	// 8: 为每个CPU分配8个页，也就是32KB的缓冲区
 	pb                = perf_buffer__new( map_fd, 8, &pb_opts );
 	ret               = libbpf_get_error( pb );
 	if ( ret ) {
