@@ -205,8 +205,8 @@ llvm-objdump -S --no-show-raw-insn tp_execve.kern.o
 
 ```
 $(patsubst %,%.skel.h,$(APP_TAG)): $(patsubst %,%.kern.o,$(APP_TAG))
-​	$(call msg,GEN-SKEL,$@)
-​	$(Q)$(BPFTOOL) gen skeleton $< > $@
+$(call msg,GEN-SKEL,$@)
+$(Q)$(BPFTOOL) gen skeleton $< > $@
 ```
 
 7. ##### open bfp kernel object
@@ -636,9 +636,11 @@ $(patsubst %,%.skel.h,$(APP_TAG)): $(patsubst %,%.kern.o,$(APP_TAG))
 
 23. ##### 解除对内核代码头文件的依赖
 
-         bpftool btf dump file /sys/kernel/btf/vmlinux format c > vmlinux.h
+          bpftool btf dump file /sys/kernel/btf/vmlinux format c > vmlinux.h
 
      判断系统是否支持BTF，这个文件可作为标志。
+
+     BTF(BPF Type Format, BPF类型格式)是一个元数据的格式，用来将BPF程序的源代码信息编码到调试信息中。调试信息包括BPF程序、映射结构等很多其它信息。BTF调试信息可以内嵌到vmlinux二进制文件中，或者随BPF程序一同使用原生Clang编译时生成。除了描述BPF程序之外，BTF正在成为一个通用的、用来描述所有内核数据结构的格式，在某些方面，它正在成为内核调试信息文件的一种轻量级替代方案，而且比使用内核头文件更加完整和可靠。
 
 24. ##### selinux和bfptool命令冲突
 
