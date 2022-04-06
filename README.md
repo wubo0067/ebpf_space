@@ -315,7 +315,7 @@ $(Q)$(BPFTOOL) gen skeleton $< > $@
 
      内核编译、安装流程
 
-        - 安装工具， 
+        - 安装工具
         
           ```
           yum install rpm-devel;  
@@ -341,22 +341,22 @@ $(Q)$(BPFTOOL) gen skeleton $< > $@
         
         - 安装内核，dnf in /data/calm/rpmbuild/RPMS/x86_64/kernel*.rpm --allowerasing，安装后查看是否支持BTF、SOCKHASH、SOCKMAP，下面显示配置已经生效。
 
-         [root@Thor-CI ~]# grep BPF /boot/config-`uname -r`
-           CONFIG_CGROUP_BPF=y
-           CONFIG_BPF=y
-           CONFIG_BPF_SYSCALL=y
-           CONFIG_ARCH_WANT_DEFAULT_BPF_JIT=y
-           CONFIG_BPF_JIT_ALWAYS_ON=y
-           CONFIG_BPF_JIT_DEFAULT_ON=y
-           CONFIG_NETFILTER_XT_MATCH_BPF=m
-           CONFIG_NET_CLS_BPF=m
-           CONFIG_NET_ACT_BPF=m
-           CONFIG_BPF_JIT=y
-           CONFIG_BPF_STREAM_PARSER=y
-           [root@Thor-CI ~]# cat /boot/config-5.12.9|grep BTF
-           CONFIG_DEBUG_INFO_BTF=y
-           CONFIG_PAHOLE_HAS_SPLIT_BTF=y
-           CONFIG_DEBUG_INFO_BTF_MODULES=y
+          [root@Thor-CI ~]# grep BPF /boot/config-`uname -r`
+            CONFIG_CGROUP_BPF=y
+            CONFIG_BPF=y
+            CONFIG_BPF_SYSCALL=y
+            CONFIG_ARCH_WANT_DEFAULT_BPF_JIT=y
+            CONFIG_BPF_JIT_ALWAYS_ON=y
+            CONFIG_BPF_JIT_DEFAULT_ON=y
+            CONFIG_NETFILTER_XT_MATCH_BPF=m
+            CONFIG_NET_CLS_BPF=m
+            CONFIG_NET_ACT_BPF=m
+            CONFIG_BPF_JIT=y
+            CONFIG_BPF_STREAM_PARSER=y
+            [root@Thor-CI ~]# cat /boot/config-5.12.9|grep BTF
+            CONFIG_DEBUG_INFO_BTF=y
+            CONFIG_PAHOLE_HAS_SPLIT_BTF=y
+            CONFIG_DEBUG_INFO_BTF_MODULES=y
 
 12. ##### BPF_MAP_TYPE_SOCKHASH定义方式
 
