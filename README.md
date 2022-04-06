@@ -205,8 +205,8 @@ llvm-objdump -S --no-show-raw-insn tp_execve.kern.o
 
 ```
 $(patsubst %,%.skel.h,$(APP_TAG)): $(patsubst %,%.kern.o,$(APP_TAG))
-​	$(call msg,GEN-SKEL,$@)
-​	$(Q)$(BPFTOOL) gen skeleton $< > $@
+$(call msg,GEN-SKEL,$@)
+$(Q)$(BPFTOOL) gen skeleton $< > $@
 ```
 
 7. ##### open bpf kernel object
@@ -636,21 +636,20 @@ $(patsubst %,%.skel.h,$(APP_TAG)): $(patsubst %,%.kern.o,$(APP_TAG))
 
           bpftool btf dump file /sys/kernel/btf/vmlinux format c > vmlinux.h
 
-      判断系统是否支持BTF，这个文件可作为标志。
+    判断系统是否支持BTF，这个文件可作为标志。BTF(BPF Type Format, BPF类型格式)是一个元数据的格式，用来将BPF程序的源代码信息编码到调试信息中。调试信息包括BPF程序、映射结构等很多其它信息。BTF调试信息可以内嵌到vmlinux二进制文件中，或者随BPF程序一同使用原生Clang编译时生成。除了描述BPF程序之外，BTF正在成为一个通用的、用来描述所有内核数据结构的格式，在某些方面，它正在成为内核调试信息文件的一种轻量级替代方案，而且比使用内核头文件更加完整和可靠。
 
 25. ##### selinux和bfptool命令冲突
 
-             执行bpftool报错
-             ```
+    执行bpftool报错
+
              root@localhost pahole]# bpftool prog show
              Error: can't get prog by id (794): Permission denied
              [root@localhost pahole]# bpftool map show
-             ```   
-             解决方式，执行下面的命令   
-             ```
+
+    解决方式
+
              ausearch -c 'bpftool' --raw | audit2allow -M my-bpftool
              semodule -X 300 -i my-bpftool.pp
-             ```
 
 26. ##### profile eEBPF程序
 
@@ -717,7 +716,7 @@ $(patsubst %,%.skel.h,$(APP_TAG)): $(patsubst %,%.kern.o,$(APP_TAG))
          3. XDP_TX：BPF程序通过该选项可以将网络报文从接收到该报文的NIC上发送出去。例如当集群中的部分机器实现了防火墙和负载均衡时，这些机器就可以作为hairpinned模式的负载均衡，在接收到报文，经过XDP BPF修改后将该报文原路发送出去。(send)。
          4. XDP_REDIRECT：与XDP_TX类似，但是通过另一个网卡将包发出去。另外， `XDP_REDIRECT` 还可以将包重定向到一个 BPF cpumap，即，当前执行 XDP 程序的 CPU 可以将这个包交给某个远端 CPU，由后者将这个包送到更上层的内核栈，当前 CPU 则继续在这个网卡执行接收和处理包的任务。这和 `XDP_PASS` 类似，但当前 CPU 不用去做将包送到内核协议栈的准备工作（分配 `skb`，初始化等等），这部分开销还是很大的。
          5. XDP_ABORT：表示程序产生了异常，其行为和 `XDP_DROP`相同，但 `XDP_ABORTED` 会经过 `trace_xdp_exception` tracepoint，因此可以通过 tracing 工具来监控这种非正常行为。
-    
+        
         对于TX和REDIRECT操作，通常需要做一些数据包数据转换（例如重写mac地址）。
 
 32. ##### XDP xdp_md结构
@@ -732,11 +731,11 @@ $(patsubst %,%.skel.h,$(APP_TAG)): $(patsubst %,%.kern.o,$(APP_TAG))
           __u32 egress_ifindex;
         };
         ```
-    
+        
         rx_queue_index：rx队列索引。
-    
+        
         ingress/egress_ifindex：接口索引。
-    
+        
         前三项其实是指针，data指向数据包的开始，data_end指向数据包的结束，data_meta指向元数据区域，xdp程序可以使用该元数据区域存储额外的伴随数据包的元数据。
 
 33. ##### BPF_MAP_TYPE_PERCPU_ARRAY数据改变的原子性
