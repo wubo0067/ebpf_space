@@ -559,10 +559,8 @@ $(Q)$(BPFTOOL) gen skeleton $< > $@
 
 21. ##### SEC("perf_event")
 
-           		Perf事件程序将BPF代码附加到Perf事件上。Perf事件程序类型定义为BPF_PROG_SEC("perf_event",   BPF_PROG_TYPE_PERF_EVENT)，Perf是内核的内部分析器，可以产生硬件和软件的性能数据事件。我们可以用Perf事件程序监控很多系统信息，从计算机的CPU到系统中运行的任何软件。当BPF程序附加到Perf事件上时，每次Perf产生分析数据时，程序代码都将被执行。
-           
-           ​		允许perf来加载bfp程序追踪应用程序到内核。
-
+    Perf事件程序将BPF代码附加到Perf事件上。Perf事件程序类型定义为BPF_PROG_SEC("perf_event", BPF_PROG_TYPE_PERF_EVENT)，Perf是内核的内部分析器，可以产生硬件和软件的性能数据事件。我们可以用Perf事件程序监控很多系统信息，从计算机的CPU到系统中运行的任何软件。当BPF程序附加到Perf事件上时，每次Perf产生分析数据时，程序代码都将被执行。允许perf来加载bfp程序追踪应用程序到内核。
+    
 22. ##### bpf_get_stackid获取进程用户态、内核态堆栈
 
             - 应用程序的函数地址转换为symbols name。查看程序elf格式的section，所有symbols信息保存在.symtab 表中。
@@ -773,7 +771,26 @@ $(Q)$(BPFTOOL) gen skeleton $< > $@
 
              允许用户访问skb和套接字细节，例如端口、IP，支持套接字之间skb重定向（*https://lwn.net/Articles/731133/*），使用bpf_sk_redirect_map帮助函数去执行重定向。
 
-     2. TC
+     2. TC，输入是sk_buff，说明已经经过XDP，内核协议栈已经分配数据包。
+
+         hook触发点：在ingress和egress点都可以触发。
+
+         - ingress hook sch_handle_ingress()；由__netif_receive_skb_core触发
+         - egress hook sch_handle_egress()；由__dev_queue_xmit触发。
+    
+         使用场景
+    
+         - 容器的策略。传统方式veth pair一端接入到宿主机，所有流量都要经过宿主机的veth，因此可以在这个veth设备上tc ingress和egress hook点上attch tc eBPF。目标地址是容器网络流量会经过主机端的veth tc egress hook，从容器出来的流量会经过主机端的veth tc ingre hook。
+         - 转发、负载均衡。对容器的出流量做NAT和负载均衡，整个过程对容器是透明的。到了egress的hook点，使用bpf_redirect辅助函数，bpf就可以接管转发逻辑了，将包推送到另一个网络设备的ingress或egress路径上。
+         - 流量抽样与监控。和xdp类似，可以使用per-cpu的ring-buffer实现流量抽样。在这种场景下，bpf程序将自定义数据、全部或截断的包内容同时推送到一个用户空间应用程序。bpf_skb_event_output使用该函数。
+    
+         tc BPF程序返回值
+    
+         - TC_ACT_UNSPEC和TC_ACT_OK，将skb向下一阶段传递，在ingress的情况下传递给内核协议栈的更上层，在egress下传递给网络设备驱动，所以说TC是在tx上是链路层的最后一层。唯一的不同是 `TC_ACT_OK` 基于 tc BPF 程序设置的 classid 来 设置 `skb->tc_index`，而 `TC_ACT_UNSPEC` 是通过 tc BPF 程序之外的 BPF 上下文中的 `skb->tc_classid` 设置。
+         - TC_ACT_SHOT和TC_ACT_STOLEN，两个都是指示内核将包丢弃。
+           - TC_ACT_SHOT提示内核skb是通过kfree_skb释放的，并返回NET_XMIT_DROP给调用方，作为立即反馈。
+           - TC_ACT_STOLEN通过consume_skb释放skb，返回NET_XMIT_SUCCESS给上层假装这个包已经被正确发送了。
+         - TC_ACT_REDIRECT，这个返回码加上bpf_redirect辅助函数，允许重定向一个skb到同一个或另一个设备的ingress或egress路径。能够将包注入另一个设备的ingress或egress路径使得基于BPF的包转发具备了完全的灵活性。
 
      3. XDP，XDP钩子尽可能的靠近设备，在内核创建sk_buff metadata之前。为了最大限度地提高性能，同时支持跨设备的通用基础架构。
 
@@ -791,17 +808,19 @@ $(Q)$(BPFTOOL) gen skeleton $< > $@
              	__u32 data;        
              	__u32 data_end; };
              ```
-
+    
              实际的XDP是实现在驱动层，如果驱动不支持XDP，可选择使用"generic" XDP，这个是现在net/core/dev.c，缺点是没有绕过skb的分配，仅仅是允许XDP用于此设备。
-
+    
+         hook触发点：只能在ingress点触发。
+    
      4. kprobes, tracepoints and perf events
-
+    
      5. cgroup相关的program类型。cgroup是用于处理资源的分配，允许和拒绝进程组访问系统资源（CPU、network bandwidth等等），其效果被各种namespace隔离。
-
+    
          1. *BPF_PROG_TYPE_CGROUP_SKB*
-
+    
             Allow or deny network access on IP exit/entry (BPF_CGROUP_INET_INGRESS/BPF_CGROUP_INET_EGRESS). The BPF program should return 1 to allow access. Any other value will cause the function __cgroup_bpf_run_filter_skb() to return -EPERM, which will be propagated to the caller, thus discarding the packet.
-
+    
          2. *BPF_PROG_TYPE_CGROUP_SOCK*
-
+    
             What can you do? Allow or deny network access on various socket-related events (BPF_CGROUP_INET_SOCK_CREATE, BPF_CGROUP_SOCK_OPS). As mentioned above, the BPF program should return 1 to allow access. Any other value will cause the function __cgroup_bpf_run_filter_sk() to return -EPERM, which will be propagated to the caller, thus discarding the packet.
