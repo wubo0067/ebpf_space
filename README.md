@@ -515,15 +515,15 @@ $(Q)$(BPFTOOL) gen skeleton $< > $@
 
 18. ##### ebpf程序的安全性
 
-              - 字节码只能够调用一小部分指定的 eBPF 帮助函数
-              - BPF程序不允许包含无法到达的指令，防止加载无效代码，延迟程序的终止。 
-              - eBPF 程序中循环次数限制且必须在有限时间内结束。
+         字节码只能够调用一小部分指定的 eBPF 帮助函数
+         eBPF程序不允许包含无法到达的指令，防止加载无效代码，延迟程序的终止。 
+         eBPF 程序中循环次数限制且必须在有限时间内结束。
 
 19. ##### bpf函数
 
-               内核：uapi/linux/bpf.h、tools/lib/bpf/bpf_helper_defs.h 文件中，*enum* bpf_func_id定义的都是可直接调用的helper functions。 
-               用户：[LIBBPF API — libbpf documentation](https://libbpf.readthedocs.io/en/latest/api.html) 
-               CO-RE：tools/lib/bpf/bpf_core_read.h
+         内核：uapi/linux/bpf.h、tools/lib/bpf/bpf_helper_defs.h 文件中，*enum* bpf_func_id定义的都是可直接调用的helper functions。 
+         用户：[LIBBPF API — libbpf documentation](https://libbpf.readthedocs.io/en/latest/api.html) 
+         CO-RE：tools/lib/bpf/bpf_core_read.h
 
 20. ##### 字段访问，获取父进程pid
 
@@ -538,11 +538,11 @@ $(Q)$(BPFTOOL) gen skeleton $< > $@
 
 22. ##### **bpf_map_update_elem**
 
-              BPF_ANY：0，表示如果元素存在，内核将更新元素；如果不存在，则在映射中创建该元素。
-              BPF_NOEXIST：1，表示仅在元素不存在时，内核创建元素。
-              BPF_EXIST：2，表示仅在元素存在时，内核更新元素。
-              内核头文件bpf/bpf_helpers.h，用户空间程序头文件tools/lib/bpf/bpf.h
-              用户空间修改映射，区别在于第一个参数改为文件描述符来访问。
+        BPF_ANY：0，表示如果元素存在，内核将更新元素；如果不存在，则在映射中创建该元素。
+        BPF_NOEXIST：1，表示仅在元素不存在时，内核创建元素。
+        BPF_EXIST：2，表示仅在元素存在时，内核更新元素。
+        内核头文件bpf/bpf_helpers.h，用户空间程序头文件tools/lib/bpf/bpf.h
+        用户空间修改映射，区别在于第一个参数改为文件描述符来访问。
 
 22. ##### Perf event
 
@@ -556,22 +556,22 @@ $(Q)$(BPFTOOL) gen skeleton $< > $@
 
     - 应用程序的函数地址转换为symbols name。查看程序elf格式的section，所有symbols信息保存在.symtab 表中。
 
-            readelf --section-headers ./cachestat_cli
-            readelf --syms ./cachestat_cli
+        readelf --section-headers ./cachestat_cli
+        readelf --syms ./cachestat_cli
 
     - 基于软件事件**PERF_TYPE_SOFTWARE**，config描述
 
-            PERF_COUNT_SW_CPU_CLOCK：它报告CPU时钟，即每个CPU的高分辨率计时器，进程堆栈采集使用该事件。
-            PERF_COUNT_SW_PAGE_FAULTS：这将报告页面错误数
+        PERF_COUNT_SW_CPU_CLOCK：它报告CPU时钟，即每个CPU的高分辨率计时器，进程堆栈采集使用该事件。
+        PERF_COUNT_SW_PAGE_FAULTS：这将报告页面错误数
 
     - perf_event_open函数参数
 
-            pid == 0 && cpu == -1：这可以测量任何CPU上的调用进程/线程。
-            pid == 0 && cpu >= 0：仅当在指定的CPU上运行时，才测量调用进程/线程。
-            pid > 0 && cpu == -1：这将测量任何CPU上的指定进程/线程。
-            pid > 0 && cpu >= 0：仅当在指定的CPU上运行时，才测量指定的进程/线程。 
-            pid == -1 && cpu >= 0：这将测量指定CPU上的所有进程/线程。这需要CAP_SYS_ADMIN功能或/ proc / sys / kernel / perf_event_paranoid值小于1。 
-            pid == -1 && cpu == -1：此设置无效，将返回错误。
+        pid == 0 && cpu == -1：这可以测量任何CPU上的调用进程/线程。
+        pid == 0 && cpu >= 0：仅当在指定的CPU上运行时，才测量调用进程/线程。
+        pid > 0 && cpu == -1：这将测量任何CPU上的指定进程/线程。
+        pid > 0 && cpu >= 0：仅当在指定的CPU上运行时，才测量指定的进程/线程。 
+        pid == -1 && cpu >= 0：这将测量指定CPU上的所有进程/线程。这需要CAP_SYS_ADMIN功能或/ proc / sys / kernel / perf_event_paranoid值小于1。 
+        pid == -1 && cpu == -1：此设置无效，将返回错误。
 
     - 用户空间栈帧的内存地址到函数名转换。
 
@@ -613,68 +613,68 @@ $(Q)$(BPFTOOL) gen skeleton $< > $@
 
     执行bpftool报错
 
-             root@localhost pahole]# bpftool prog show
-             Error: can't get prog by id (794): Permission denied
-             [root@localhost pahole]# bpftool map show
+        root@localhost pahole]# bpftool prog show
+        Error: can't get prog by id (794): Permission denied
+        [root@localhost pahole]# bpftool map show
 
     解决方式
 
-             ausearch -c 'bpftool' --raw | audit2allow -M my-bpftool
-             semodule -X 300 -i my-bpftool.pp
+        ausearch -c 'bpftool' --raw | audit2allow -M my-bpftool
+        semodule -X 300 -i my-bpftool.pp
 
 26. ##### profile eEBPF程序
 
-            kernel.bpf_stats_enabled，用来开启收集eBPF程序的状态信息，主要是run_time_ns和run_cnt这两个参数。前者代表内核累计花了多少时间运行这个BPF程序，后者是这个BPF程序累计运行了多少次
-            
-            -  使用`bpftool prog show`命令，执行后直接显示结果
-            - 使用`cat /proc/<pid>/fdinfo/<bpf_prog_fd>`命令，执行后直接显示结果
-            - 使用`BPF_OBJ_GET_INFO_BY_FD`的BPF系统调用方法，编程获取结果
+    kernel.bpf_stats_enabled，用来开启收集eBPF程序的状态信息，主要是run_time_ns和run_cnt这两个参数。前者代表内核累计花了多少时间运行这个BPF程序，后者是这个BPF程序累计运行了多少次。
+
+    - 使用`bpftool prog show`命令，执行后直接显示结果
+    - 使用`cat /proc/<pid>/fdinfo/<bpf_prog_fd>`命令，执行后直接显示结果
+    - 使用`BPF_OBJ_GET_INFO_BY_FD`的BPF系统调用方法，编程获取结果
 
 27. ##### CO-RE
 
-            一次编译，到处运行，Compile Once – Run Everywhere，将它依赖的软件栈和数据集中在一起.
-            
-            - BTF 类型信息：使得我们能获取内核、BPF 程序类型及 BPF 代码的关键信息， 这也是下面其他部分的基础。
-            - 编译器（clang）：给 BPF C 代码提供了表达能力和记录重定位（relocation）信息的能力。
-            - BPF loader (libbpf)：根据内核的BTF和BPF程序，调整编译后的BPF代码，使其适合在目标内核上运行。
-            - 内核：虽然对 BPF CO-RE 完全不感知，但提供了一些 BPF 高级特性，使某些高级场景成为可能。
+    一次编译，到处运行，Compile Once – Run Everywhere，将它依赖的软件栈和数据集中在一起.
+
+    - BTF 类型信息：使得我们能获取内核、BPF 程序类型及 BPF 代码的关键信息， 这也是下面其他部分的基础。
+    - 编译器（clang）：给 BPF C 代码提供了表达能力和记录重定位（relocation）信息的能力。
+    - BPF loader (libbpf)：根据内核的BTF和BPF程序，调整编译后的BPF代码，使其适合在目标内核上运行。
+    - 内核：虽然对 BPF CO-RE 完全不感知，但提供了一些 BPF 高级特性，使某些高级场景成为可能。
 
 28. ##### cursor_advance宏的作用
 
-           ```
-           /* Packet parsing state machine helpers. */
-           #define cursor_advance(_cursor, _len) \
-             ({ void *_tmp = _cursor; _cursor += _len; _tmp; })
-           ```
-           
-           调用代码如下：
-           ```
-           struct ethernet_t *ethernet = cursor_advance(cursor, sizeof(*ethernet));
-           ```
-           
-           代码结果等价于，
-           
-           ```
-           {
-           	void *__tmp = cursor;
-           	cursor += sizeof(*ethernet);
-           	ethernet = __tmp;
-           }
-           ```
+       ```
+       /* Packet parsing state machine helpers. */
+       #define cursor_advance(_cursor, _len) \
+         ({ void *_tmp = _cursor; _cursor += _len; _tmp; })
+       ```
+    
+       调用代码如下：
+       ```
+       struct ethernet_t *ethernet = cursor_advance(cursor, sizeof(*ethernet));
+       ```
+    
+       代码结果等价于：
+    
+       ```
+       {
+       	void *__tmp = cursor;
+       	cursor += sizeof(*ethernet);
+       	ethernet = __tmp;
+       }
+       ```
 
 29. #####  安装内核
 
-          列出仓库中内核：dnf --enablerepo="ol8_baseos_latest" --enablerepo="elrepo-kernel" list available | grep kernel
-          
-          查看包信息：yum info kernel-4.18.0
-          
-          安装内核：yum install kernel-4.18.0-348.7.1.el8_5
-          
-          安装内核源码：在仓库地址[Oracle Linux 8 (x86_64) BaseOS Latest | Oracle, Software. Hardware. Complete.](https://yum.oracle.com/repo/OracleLinux/OL8/baseos/latest/x86_64/index_src.html)，找到kernel-4.18.0-348.7.1.el8_5.src.rpm，下载安装
-          
-          查看安装的内核：rpm -qa|grep kernel
-          
-          解压rpm源码包：cd /usr/src/kernels/，cp linux-4.18.0-348.7.1.el8_5.tar.xz ./，unxz linux-4.18.0-348.7.1.el8_5.tar.xz，tar xf linux-4.18.0-348.7.1.el8_5.tar 
+      列出仓库中内核：dnf --enablerepo="ol8_baseos_latest" --enablerepo="elrepo-kernel" list available | grep kernel
+    
+      查看包信息：yum info kernel-4.18.0
+    
+      安装内核：yum install kernel-4.18.0-348.7.1.el8_5
+    
+      安装内核源码：在仓库地址[Oracle Linux 8 (x86_64) BaseOS Latest | Oracle, Software. Hardware. Complete.](https://yum.oracle.com/repo/OracleLinux/OL8/baseos/latest/x86_64/index_src.html)，找到kernel-4.18.0-348.7.1.el8_5.src.rpm，下载安装
+    
+      查看安装的内核：rpm -qa|grep kernel
+    
+      解压rpm源码包：cd /usr/src/kernels/，cp linux-4.18.0-348.7.1.el8_5.tar.xz ./，unxz linux-4.18.0-348.7.1.el8_5.tar.xz，tar xf linux-4.18.0-348.7.1.el8_5.tar 
 
 30. ##### bpftool工具使用
 
@@ -682,32 +682,32 @@ $(Q)$(BPFTOOL) gen skeleton $< > $@
 
 31. ##### XDP Action小结
 
-         1. XDP_DROP：在驱动层丢弃报文，通常用于实现DDos或防火墙。(drop)。
-         2. XDP_PASS：允许报文上送到内核网络栈，同时处理该报文的CPU会分配并填充一个`skb`，将其传递到GRO引擎。之后的处理与没有XDP程序的过程相同。
-         3. XDP_TX：BPF程序通过该选项可以将网络报文从接收到该报文的NIC上发送出去。例如当集群中的部分机器实现了防火墙和负载均衡时，这些机器就可以作为hairpinned模式的负载均衡，在接收到报文，经过XDP BPF修改后将该报文原路发送出去。(send)。
-         4. XDP_REDIRECT：与XDP_TX类似，但是通过另一个网卡将包发出去。另外， `XDP_REDIRECT` 还可以将包重定向到一个 BPF cpumap，即，当前执行 XDP 程序的 CPU 可以将这个包交给某个远端 CPU，由后者将这个包送到更上层的内核栈，当前 CPU 则继续在这个网卡执行接收和处理包的任务。这和 `XDP_PASS` 类似，但当前 CPU 不用去做将包送到内核协议栈的准备工作（分配 `skb`，初始化等等），这部分开销还是很大的。
-         5. XDP_ABORT：表示程序产生了异常，其行为和 `XDP_DROP`相同，但 `XDP_ABORTED` 会经过 `trace_xdp_exception` tracepoint，因此可以通过 tracing 工具来监控这种非正常行为。
-        
-        对于TX和REDIRECT操作，通常需要做一些数据包数据转换（例如重写mac地址）。
+     1. XDP_DROP：在驱动层丢弃报文，通常用于实现DDos或防火墙。(drop)。
+     2. XDP_PASS：允许报文上送到内核网络栈，同时处理该报文的CPU会分配并填充一个`skb`，将其传递到GRO引擎。之后的处理与没有XDP程序的过程相同。
+     3. XDP_TX：BPF程序通过该选项可以将网络报文从接收到该报文的NIC上发送出去。例如当集群中的部分机器实现了防火墙和负载均衡时，这些机器就可以作为hairpinned模式的负载均衡，在接收到报文，经过XDP BPF修改后将该报文原路发送出去。(send)。
+     4. XDP_REDIRECT：与XDP_TX类似，但是通过另一个网卡将包发出去。另外， `XDP_REDIRECT` 还可以将包重定向到一个 BPF cpumap，即，当前执行 XDP 程序的 CPU 可以将这个包交给某个远端 CPU，由后者将这个包送到更上层的内核栈，当前 CPU 则继续在这个网卡执行接收和处理包的任务。这和 `XDP_PASS` 类似，但当前 CPU 不用去做将包送到内核协议栈的准备工作（分配 `skb`，初始化等等），这部分开销还是很大的。
+     5. XDP_ABORT：表示程序产生了异常，其行为和 `XDP_DROP`相同，但 `XDP_ABORTED` 会经过 `trace_xdp_exception` tracepoint，因此可以通过 tracing 工具来监控这种非正常行为。
+    
+    对于TX和REDIRECT操作，通常需要做一些数据包数据转换（例如重写mac地址）。
 
 32. ##### XDP xdp_md结构
 
-        ```
-        struct xdp_md {
-          __u32 data;
-          __u32 data_end;
-          __u32 data_meta;
-          __u32 ingress_ifindex;
-          __u32 rx_queue_index;
-          __u32 egress_ifindex;
-        };
-        ```
-        
-        rx_queue_index：rx队列索引。
-        
-        ingress/egress_ifindex：接口索引。
-        
-        前三项其实是指针，data指向数据包的开始，data_end指向数据包的结束，data_meta指向元数据区域，xdp程序可以使用该元数据区域存储额外的伴随数据包的元数据。
+    ```
+    struct xdp_md {
+      __u32 data;
+      __u32 data_end;
+      __u32 data_meta;
+      __u32 ingress_ifindex;
+      __u32 rx_queue_index;
+      __u32 egress_ifindex;
+    };
+    ```
+    
+    rx_queue_index：rx队列索引。
+    
+    ingress/egress_ifindex：接口索引。
+    
+    前三项其实是指针，data指向数据包的开始，data_end指向数据包的结束，data_meta指向元数据区域，xdp程序可以使用该元数据区域存储额外的伴随数据包的元数据。
 
 33. ##### BPF_MAP_TYPE_PERCPU_ARRAY数据改变的原子性
 
@@ -719,80 +719,28 @@ $(Q)$(BPFTOOL) gen skeleton $< > $@
 
       [BPF program types and their principles - actorsfit](https://blog.actorsfit.com/a?ID=01750-a415789d-fe05-4a5f-8aa4-3183a1c6d97b)
 
-      1. 套接字相关Socket的bpf prog type：SOCKET_FILTER, SK_SKB, SOCK_OPS。我们使用socket相关的ebpf prog type去过滤，转发，监控套接字数据。
+    1. 套接字相关Socket的bpf prog type：SOCKET_FILTER, SK_SKB, SOCK_OPS。我们使用socket相关的ebpf prog type去过滤，转发，监控套接字数据。对于socket filtering通常将其附加到原始套接字上，常见的代码如下，用来创建一个原始套接字，针对所有IP包协议类型。
 
-          对于socket filtering通常将其附加到原始套接字上，常见的代码如下，用来创建一个原始套接字，针对所有IP包协议类型。
-
-          ```
-          s = socket(AP_PACKET, SOCK_RAW, htons(ETH_P_ALL));
-          ```
-
-          - *BPF_PROG_TYPE_SOCKET_FILTER*
-
-              过滤操作包括丢弃包：program直接return 0。或者修改包：program返回包的长度。
-
-          - *BPF_PROG_TYPE_SOCK_OPS*
-
-              用来操作套接字选项，例如setsockopt，设置rwnd，mtu等。Program返回0表示成功，负数表示失败。这个Program是附加到cgroup文件描述符上。Program参数是bpf_sock_ops。
-
-          - *BPF_PROG_TYPE_SK_SKB*
-
-              允许用户访问skb和套接字细节，例如端口、IP，支持套接字之间skb重定向（*https://lwn.net/Articles/731133/*），使用bpf_sk_redirect_map帮助函数去执行重定向。
-
-      2. TC
-
-      3. XDP，XDP钩子尽可能的靠近设备，在内核创建sk_buff metadata之前。为了最大限度地提高性能，同时支持跨设备的通用基础架构。
-
-          - *BPF_PROG_TYPE_XDP*
-
-              XDP允许访问数据包早于包元数据分配，这是适合做防御DDos和负载均衡的地方。这样可以避免分配sk_buff昂贵的开销。Program附加在netlink socket上，如下代码创建netlink socket。Program的参数是xdp metadata指针。
-
-              ```
-              socket (AF_NETLINK, SOCK_RAW, NETLINK_ROUTE)
-              ```
-
-              ```
-              /* user accessible metadata for XDP packet hook * new fields must be added to the end of this structure */ 
-              struct xdp_md {        
-              	__u32 data;        
-              	__u32 data_end; };
-              ```
-
-              实际的XDP是实现在驱动层，如果驱动不支持XDP，可选择使用"generic" XDP，这个是现在net/core/dev.c，缺点是没有绕过skb的分配，仅仅是允许XDP用于此设备。
-
-      4. kprobes, tracepoints and perf events
-
-      5. cgroup相关的program类型。cgroup是用于处理资源的分配，允许和拒绝进程组访问系统资源（CPU、network bandwidth等等），其效果被各种namespace隔离。
-
-          1. *BPF_PROG_TYPE_CGROUP_SKB*
-
-             Allow or deny network access on IP exit/entry (BPF_CGROUP_INET_INGRESS/BPF_CGROUP_INET_EGRESS). The BPF program should return 1 to allow access. Any other value will cause the function __cgroup_bpf_run_filter_skb() to return -EPERM, which will be propagated to the caller, thus discarding the packet.
-
-          2. *BPF_PROG_TYPE_CGROUP_SOCK*
-
-<<<<<<< HEAD
-         对于socket filtering通常将其附加到原始套接字上，常见的代码如下，用来创建一个原始套接字，针对所有IP包协议类型。
-
-         ```
-         s = socket(AP_PACKET, SOCK_RAW, htons(ETH_P_ALL));
-         ```
+       ```
+       s = socket(AP_PACKET, SOCK_RAW, htons(ETH_P_ALL));
+       ```
     
-         - *BPF_PROG_TYPE_SOCKET_FILTER*
-    
-             过滤操作包括丢弃包：program直接return 0。或者修改包：program返回包的长度。
-    
-         - *BPF_PROG_TYPE_SOCK_OPS*
-    
-             用来操作套接字选项，例如setsockopt，设置rwnd，mtu等。Program返回0表示成功，负数表示失败。这个Program是附加到cgroup文件描述符上。Program参数是bpf_sock_ops。
-    
-         - *BPF_PROG_TYPE_SK_SKB*
-    
-             允许用户访问skb和套接字细节，例如端口、IP，支持套接字之间skb重定向（*https://lwn.net/Articles/731133/*），使用bpf_sk_redirect_map帮助函数去执行重定向。
-    
+       - *BPF_PROG_TYPE_SOCKET_FILTER*
+
+            过滤操作包括丢弃包：program直接return 0。或者修改包：program返回包的长度。
+
+       - *BPF_PROG_TYPE_SOCK_OPS*
+
+            用来操作套接字选项，例如setsockopt，设置rwnd，mtu等。Program返回0表示成功，负数表示失败。这个Program是附加到cgroup文件描述符上。Program参数是bpf_sock_ops。
+
+       - *BPF_PROG_TYPE_SK_SKB*
+
+            允许用户访问skb和套接字细节，例如端口、IP，支持套接字之间skb重定向（*https://lwn.net/Articles/731133/*），使用bpf_sk_redirect_map帮助函数去执行重定向。
+
      2. TC，输入是sk_buff，说明已经经过XDP，内核协议栈已经分配数据包。
-    
+
          hook触发点：在ingress和egress点都可以触发。
-    
+
          - ingress hook sch_handle_ingress()；由__netif_receive_skb_core触发
          - egress hook sch_handle_egress()；由__dev_queue_xmit触发。
     
@@ -809,17 +757,17 @@ $(Q)$(BPFTOOL) gen skeleton $< > $@
            - TC_ACT_SHOT提示内核skb是通过kfree_skb释放的，并返回NET_XMIT_DROP给调用方，作为立即反馈。
            - TC_ACT_STOLEN通过consume_skb释放skb，返回NET_XMIT_SUCCESS给上层假装这个包已经被正确发送了。
          - TC_ACT_REDIRECT，这个返回码加上bpf_redirect辅助函数，允许重定向一个skb到同一个或另一个设备的ingress或egress路径。能够将包注入另一个设备的ingress或egress路径使得基于BPF的包转发具备了完全的灵活性。
-    
+
      3. XDP，XDP钩子尽可能的靠近设备，在内核创建sk_buff metadata之前。为了最大限度地提高性能，同时支持跨设备的通用基础架构。
-    
+
          - *BPF_PROG_TYPE_XDP*
-    
+
              XDP允许访问数据包早于包元数据分配，这是适合做防御DDos和负载均衡的地方。这样可以避免分配sk_buff昂贵的开销。Program附加在netlink socket上，如下代码创建netlink socket。Program的参数是xdp metadata指针。
-    
+
              ```
              socket (AF_NETLINK, SOCK_RAW, NETLINK_ROUTE)
              ```
-    
+
              ```
              /* user accessible metadata for XDP packet hook * new fields must be added to the end of this structure */ 
              struct xdp_md {        
@@ -842,6 +790,3 @@ $(Q)$(BPFTOOL) gen skeleton $< > $@
          2. *BPF_PROG_TYPE_CGROUP_SOCK*
     
             What can you do? Allow or deny network access on various socket-related events (BPF_CGROUP_INET_SOCK_CREATE, BPF_CGROUP_SOCK_OPS). As mentioned above, the BPF program should return 1 to allow access. Any other value will cause the function __cgroup_bpf_run_filter_sk() to return -EPERM, which will be propagated to the caller, thus discarding the packet.
-=======
-             What can you do? Allow or deny network access on various socket-related events (BPF_CGROUP_INET_SOCK_CREATE, BPF_CGROUP_SOCK_OPS). As mentioned above, the BPF program should return 1 to allow access. Any other value will cause the function __cgroup_bpf_run_filter_sk() to return -EPERM, which will be propagated to the caller, thus discarding the packet.
->>>>>>> c96c34a4fa8f9fa7fb9fdaaa4082a55f77fcab58
