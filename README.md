@@ -301,62 +301,64 @@ $(Q)$(BPFTOOL) gen skeleton $< > $@
 
 11. ##### 编译内核支持BTF、BPF_MAP_TYPE_SOCKMAP、BPF_MAP_TYPE_SOCKHASH
 
-     ```
-     cd linux-5.12.9/
-     cp -v /boot/config-$(uname -r) .config 
-     ```
+      ```
+      cd linux-5.12.9/
+      cp -v /boot/config-$(uname -r) .config 
+      ```
 
-     编辑.config文件，设置以下内容
+      编辑.config文件，设置以下内容
 
-     ```
-     CONFIG_DEBUG_INFO_BTF=y
-     CONFIG_BPF_STREAM_PARSER=y
-     ```
+      ```
+      CONFIG_DEBUG_INFO_BTF=y
+      CONFIG_BPF_STREAM_PARSER=y
+      ```
 
-     内核编译、安装流程
+      内核编译、安装流程
 
-        - 安装工具
-        
-          ```
-          yum install rpm-devel;  
-          yum install rpmdevtools; 
-          yum groupinstall "Development tools"
-          yum module install llvm-toolset
-          ```
+     - 安装工具
 
-        - rpmdev-setuptree,  在当前用户根目录下生成rpmbuild目录。
-        
-        - 在源码目录执行make -j8 rpm-pkg。 [Step-by-step - Build Kernel CentOS 8 Guide - tutorialforlinux.com](https://tutorialforlinux.com/2020/12/28/step-by-step-build-kernel-centos-linux-8-guide/) 
-        
-          ```
-          make mrproper    //会把以前进行过的内核功能文件也删除掉，几乎只有在第一次执行内核编译前才会进行这个操作
-          make clean    //仅会删除类似目标文件之类的编译过程产生的中间文件，而不会删除配置文件
-          make vmlinux    //未经压缩的内核；常见的/boot下的内核文件都是经过压缩的
-          make bzImage    //编译内核，经过压缩的内核
-          make modules    //编译内核模块
-          make all    //进行上述三个操作
-          ```
-        
-        - 删除多余的内核， yum remove $(rpm -qa | grep kernel | grep -v $(uname -r)) 
-        
-        - 安装内核，dnf in /data/calm/rpmbuild/RPMS/x86_64/kernel*.rpm --allowerasing，安装后查看是否支持BTF、SOCKHASH、SOCKMAP，下面显示配置已经生效。
-
-          [root@Thor-CI ~]# grep BPF /boot/config-`uname -r`
-            CONFIG_CGROUP_BPF=y
-            CONFIG_BPF=y
-            CONFIG_BPF_SYSCALL=y
-            CONFIG_ARCH_WANT_DEFAULT_BPF_JIT=y
-            CONFIG_BPF_JIT_ALWAYS_ON=y
-            CONFIG_BPF_JIT_DEFAULT_ON=y
-            CONFIG_NETFILTER_XT_MATCH_BPF=m
-            CONFIG_NET_CLS_BPF=m
-            CONFIG_NET_ACT_BPF=m
-            CONFIG_BPF_JIT=y
-            CONFIG_BPF_STREAM_PARSER=y
-            [root@Thor-CI ~]# cat /boot/config-5.12.9|grep BTF
-            CONFIG_DEBUG_INFO_BTF=y
-            CONFIG_PAHOLE_HAS_SPLIT_BTF=y
-            CONFIG_DEBUG_INFO_BTF_MODULES=y
+       ```
+       yum install rpm-devel;  
+       yum install rpmdevtools; 
+       yum groupinstall "Development tools"
+       yum module install llvm-toolset
+       ```
+       
+       - rpmdev-setuptree,  在当前用户根目录下生成rpmbuild目录。
+       
+       - 在源码目录执行make -j8 rpm-pkg。 [Step-by-step - Build Kernel CentOS 8 Guide - tutorialforlinux.com](https://tutorialforlinux.com/2020/12/28/step-by-step-build-kernel-centos-linux-8-guide/) 
+       
+           ```
+           make mrproper    //会把以前进行过的内核功能文件也删除掉，几乎只有在第一次执行内核编译前才会进行这个操作
+           make clean    //仅会删除类似目标文件之类的编译过程产生的中间文件，而不会删除配置文件
+           make vmlinux    //未经压缩的内核；常见的/boot下的内核文件都是经过压缩的
+           make bzImage    //编译内核，经过压缩的内核
+           make modules    //编译内核模块
+           make all    //进行上述三个操作
+           ```
+       
+       - 删除多余的内核， yum remove $(rpm -qa | grep kernel | grep -v $(uname -r)) 
+       
+       - 安装内核，dnf in /data/calm/rpmbuild/RPMS/x86_64/kernel*.rpm --allowerasing，安装后查看是否支持BTF、SOCKHASH、SOCKMAP，下面显示配置已经生效。
+       
+         ```
+           [root@Thor-CI ~]# grep BPF /boot/config-`uname -r`
+             CONFIG_CGROUP_BPF=y
+             CONFIG_BPF=y
+             CONFIG_BPF_SYSCALL=y
+             CONFIG_ARCH_WANT_DEFAULT_BPF_JIT=y
+             CONFIG_BPF_JIT_ALWAYS_ON=y
+             CONFIG_BPF_JIT_DEFAULT_ON=y
+             CONFIG_NETFILTER_XT_MATCH_BPF=m
+             CONFIG_NET_CLS_BPF=m
+             CONFIG_NET_ACT_BPF=m
+             CONFIG_BPF_JIT=y
+             CONFIG_BPF_STREAM_PARSER=y
+             [root@Thor-CI ~]# cat /boot/config-5.12.9|grep BTF
+             CONFIG_DEBUG_INFO_BTF=y
+             CONFIG_PAHOLE_HAS_SPLIT_BTF=y
+             CONFIG_DEBUG_INFO_BTF_MODULES=y
+         ```
 
 12. ##### BPF_MAP_TYPE_SOCKHASH定义方式
 
