@@ -302,61 +302,20 @@ $(Q)$(BPFTOOL) gen skeleton $< > $@
 11. ##### 编译内核支持BTF、BPF_MAP_TYPE_SOCKMAP、BPF_MAP_TYPE_SOCKHASH
 
       ```
-      cd linux-5.12.9/
-      cp -v /boot/config-$(uname -r) .config 
-      ```
-
-      编辑.config文件，设置以下内容
-
-      ```
       CONFIG_DEBUG_INFO_BTF=y
       CONFIG_BPF_STREAM_PARSER=y
       ```
 
-      内核编译、安装流程
+      内核编译、安装流程安装工具
 
-         - 安装工具
-         
-           ```
-           yum install rpm-devel;  
-           yum install rpmdevtools; 
-           yum groupinstall "Development tools"
-           yum module install llvm-toolset
-           ```
-         
-         - rpmdev-setuptree,  在当前用户根目录下生成rpmbuild目录。
-         
-         - 在源码目录执行make -j8 rpm-pkg。 [Step-by-step - Build Kernel CentOS 8 Guide - tutorialforlinux.com](https://tutorialforlinux.com/2020/12/28/step-by-step-build-kernel-centos-linux-8-guide/) 
-         
-           ```
-           make mrproper    //会把以前进行过的内核功能文件也删除掉，几乎只有在第一次执行内核编译前才会进行这个操作
-           make clean    //仅会删除类似目标文件之类的编译过程产生的中间文件，而不会删除配置文件
-           make vmlinux    //未经压缩的内核；常见的/boot下的内核文件都是经过压缩的
-           make bzImage    //编译内核，经过压缩的内核
-           make modules    //编译内核模块
-           make all    //进行上述三个操作
-           ```
-         
-         - 删除多余的内核， yum remove $(rpm -qa | grep kernel | grep -v $(uname -r)) 
-         
-         - 安装内核，dnf in /data/calm/rpmbuild/RPMS/x86_64/kernel*.rpm --allowerasing，安装后查看是否支持BTF、SOCKHASH、SOCKMAP，下面显示配置已经生效。
-         
-           [root@Thor-CI ~]# grep BPF /boot/config-`uname -r`
-             CONFIG_CGROUP_BPF=y
-             CONFIG_BPF=y
-             CONFIG_BPF_SYSCALL=y
-             CONFIG_ARCH_WANT_DEFAULT_BPF_JIT=y
-             CONFIG_BPF_JIT_ALWAYS_ON=y
-             CONFIG_BPF_JIT_DEFAULT_ON=y
-             CONFIG_NETFILTER_XT_MATCH_BPF=m
-             CONFIG_NET_CLS_BPF=m
-             CONFIG_NET_ACT_BPF=m
-             CONFIG_BPF_JIT=y
-             CONFIG_BPF_STREAM_PARSER=y
-             [root@Thor-CI ~]# cat /boot/config-5.12.9|grep BTF
-             CONFIG_DEBUG_INFO_BTF=y
-             CONFIG_PAHOLE_HAS_SPLIT_BTF=y
-             CONFIG_DEBUG_INFO_BTF_MODULES=y
+    ```
+    yum install rpm-devel;  
+    yum install rpmdevtools; 
+    yum groupinstall "Development tools"
+    yum module install llvm-toolset
+    ```
+
+​		删除多余的内核， yum remove $(rpm -qa | grep kernel | grep -v $(uname -r)) 
 
 12. ##### BPF_MAP_TYPE_SOCKHASH定义方式
 
@@ -369,9 +328,9 @@ $(Q)$(BPFTOOL) gen skeleton $< > $@
         	.map_flags      = 0,
         };
         ```
-
+    
         上面的定义方式能**正确运行**，如果使用下面的方式创建map时会报错：Error in bpf_create_map_xattr(sock_ops_map):ERROR: strerror_r(-524)=22(-524)。
-
+    
         ```
         struct {
         	__uint( type, BPF_MAP_TYPE_SOCKHASH );
@@ -383,9 +342,9 @@ $(Q)$(BPFTOOL) gen skeleton $< > $@
         	__uint( value_size, sizeof( __s32 ) );
         } sock_ops_map_1 SEC( ".maps" );
         ```
-
+    
         但其它类型的map却没有问题，例如BPF_MAP_TYPE_HASH，这种差异问题需要深入研究代码，查看内核源码是可以按上面的编写方式的。
-
+    
         ```
         struct {
         	__uint(type, BPF_MAP_TYPE_HASH);
@@ -394,34 +353,34 @@ $(Q)$(BPFTOOL) gen skeleton $< > $@
         	__type(value, __u64);
         } sockhash SEC(".maps");
         ```
-
+    
         加载prog的命令：**bpftool prog load tcp_accelerate_sockops.kern.o "/sys/fs/bpf/bpf_sockops"**
 
 13. ##### bpftool cgroup attach使用cgroup V2
 
         当前systemd支持三种cgroup模式，分别是
-
+    
         1. legacy， 采用 cgroup v1
         2. hybrid，混杂模式，既挂载 cgroup v1 也挂载 cgroup v2， 但是在该模式下，cgroup v2 下不使能任何 controller，不用于资源管理,参考[systemd 模式说明](https://github.com/systemd/systemd/pull/10161/files)
         3. unified, 纯粹使用 cgroup v2
-
+    
         检查当前系统是否支持cgroup v2
-
+    
         ```
         [root@Thor-CI sockredir]# grep cgroup /proc/filesystems
         nodev	cgroup
         nodev	cgroup2
         ```
-
+    
         在内核中开启cgroup v2
-
+    
         ```
         grubby --update-kernel=ALL --args="systemd.unified_cgroup_hierarchy=1"
         reboot
         ```
-
+    
         检查cgroup v2是否生效
-
+    
         ```
         [root@Thor-CI sockredir]# mount | grep cgroup
         cgroup2 on /sys/fs/cgroup type cgroup2 (rw,nosuid,nodev,noexec,relatime,nsdelegate)
@@ -433,9 +392,9 @@ $(Q)$(BPFTOOL) gen skeleton $< > $@
        相关资料
 
         [centos8使用grubby修改内核启动参数 - TinyChen's Studio](https://tinychen.com/20201118-centos8-use-grubby-modify-kernel/)
-
+    
         [详解Cgroup V2 | Zorro’s Linux Book (zorrozou.github.io)](https://zorrozou.github.io/docs/详解Cgroup V2.html)
-
+    
         [Cgroup V2 Notes | Lifeng (gitee.io)](https://lifeng2221dd1.gitee.io/2020/11/12/cgroup-v2/)
 
 14. ##### SEC("name")和prog _type、attach_type关系
@@ -499,7 +458,7 @@ $(Q)$(BPFTOOL) gen skeleton $< > $@
             cp /boot/config-`uname -r` ./.config
             
             CONFIG_DEBUG_INFO=y                     # with debug symbols
-            
+            make mrproper
             make scripts
             make -j8
             make headers_install 					# /usr/include/linux
@@ -602,10 +561,10 @@ $(Q)$(BPFTOOL) gen skeleton $< > $@
      - 但是对于动态库中的函数地址，可以通过/proc/pid/maps中module基地址+readelf第一列的相对地址+偏移量得到函数在地址空间的地址。0x00007f52ff67911b = 0xb + ef110 + 7f52ff58a000
 
                 0x00007f52ff67911b	__GI___readlink	/usr/lib64/libc-2.28.so	0xb
-                
+             
                 [root@localhost build]# readelf -s /usr/lib64/libc-2.28.so|grep __GI___readlink
                  23266: 00000000000ef110    37 FUNC    LOCAL  DEFAULT   14 __GI___readlink
-                
+             
                 7f52ff58a000-7f52ff746000 r-xp 00000000 fd:00 7445                       /usr/lib64/libc-2.28.so
                 7f52ff746000-7f52ff945000 ---p 001bc000 fd:00 7445                       /usr/lib64/libc-2.28.so
                 7f52ff945000-7f52ff949000 r--p 001bb000 fd:00 7445                       /usr/lib64/libc-2.28.so
@@ -654,14 +613,14 @@ $(Q)$(BPFTOOL) gen skeleton $< > $@
         #define cursor_advance(_cursor, _len) \
           ({ void *_tmp = _cursor; _cursor += _len; _tmp; })
         ```
-
+    
         调用代码如下：
         ```
         struct ethernet_t *ethernet = cursor_advance(cursor, sizeof(*ethernet));
         ```
-
+    
         代码结果等价于：
-
+    
         ```
         {
         	void *__tmp = cursor;
@@ -720,7 +679,7 @@ $(Q)$(BPFTOOL) gen skeleton $< > $@
 33. ##### BPF_MAP_TYPE_PERCPU_ARRAY数据改变的原子性
 
         BPF_MAP_TYPE_PERCPU_ARRAY returns a data record specific to current CPU and XDP hooks runs under Softirq, which makes it safe to update without atomic operations.
-
+    
         从BPF_MAP_TYPE_PERCPU_ARRAY中查询的value，修改不用加锁。
 
 34. ##### eBPF中不同类型Program的作用
