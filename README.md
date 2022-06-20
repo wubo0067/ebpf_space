@@ -1,8 +1,8 @@
-### EBPF开发总结
+# EBPF开发总结
 
-1. ##### 编译内核支持BTF
+### 编译内核支持BTF
 
-​		如果在代码中有`#include <bpf/bpf_core_read.h>`，使用了`BPF_CORE_READ`宏，在user程序中`bpf_object__load`就会报如下错误。
+如果在代码中有`#include <bpf/bpf_core_read.h>`，使用了`BPF_CORE_READ`宏，在user程序中`bpf_object__load`就会报如下错误。
 
 ```
 libbpf: failed to find valid kernel BTF
@@ -12,11 +12,11 @@ libbpf: failed to load BPF skeleton 'tp_execve_kern': -3
 failed to load BPF object: -3
 ```
 
-​		BTF，即BPF Type Format，它通过pahole将DWARF调试信息转化得到，但是没有那么generic和verbose。它是一种空间高效的、紧凑的、有足够表达能力的格式，一个常用内核的BTF仅需要1-5MB，足以描述C程序的所有类型信息。由于它的简单性和BPF去重算法，对比DWARF，BTF能够缩小100x的尺寸。现在，在运行时总是保留BTF信息是常见做法，它对应内核选项 CONFIG_DEBUG_INFO_BTF=y。
+BTF，即BPF Type Format，它通过pahole将DWARF调试信息转化得到，但是没有那么generic和verbose。它是一种空间高效的、紧凑的、有足够表达能力的格式，一个常用内核的BTF仅需要1-5MB，足以描述C程序的所有类型信息。由于它的简单性和BPF去重算法，对比DWARF，BTF能够缩小100x的尺寸。现在，在运行时总是保留BTF信息是常见做法，它对应内核选项 CONFIG_DEBUG_INFO_BTF=y。
 
-​		BTF能够用来增强BPF verifier的能力，**能够允许BPF代码直接访问内核内存，不需要 bpf_probe_read**()。
+BTF能够用来增强BPF verifier的能力，**能够允许BPF代码直接访问内核内存，不需要 bpf_probe_read**()。
 
-​		编译支持BTF的内核。
+编译支持BTF的内核。
 
 - .config文件设置CONFIG_DEBUG_INFO_BTF=y，让 Linux 内核在运行时（runtime）一直携带 BTF 信息是可行的
 
@@ -34,7 +34,7 @@ failed to load BPF object: -3
 
 - 在内核源码执行make vmlinux，检查/sys/kernel/btf/vmlinux
 
-2. ##### BPF Verifier校验报错
+### BPF Verifier校验报错
 
 BPF Verifier输出unbounded memory access，需要判断args空间是否足够读取ARGSIZE，没有这个判断就校验就会报错。
 
@@ -51,26 +51,13 @@ if ( ret > ARGSIZE ) {
 }
 ```
 
-3. ##### printk校验报错
-
-printk( "execute:%s, event length: %u", evt->comm, len );，如果len是size_t类型，没有匹配的format，应为format只支持%d %i %u %x %ld %li %lu %lx %lld %lli %llu %llx %p %pB %pks %pus %s，所以会报内存越界。
-
-bpftrace.c:428。最多只能有三个参数。
-
-```
-if (fmt_cnt >= 3)
-​      return -EINVAL;
-```
-
-4. ##### eBPF用户程序中的全局变量
+### eBPF用户程序中的全局变量
 
 user程序如何初始化kern程序中的变量达到控制效果。patch有个说明 [[v3,bpf-next,1/3\] bpf: add mmap() support for BPF_MAP_TYPE_ARRAY - Patchwork (ozlabs.org)](https://patchwork.ozlabs.org/project/netdev/patch/20191113031518.155618-2-andriin@fb.com/) 。
 
 要使用libbpf中`bpf_object__load_skeleton`这个方法做mmap达到改变变量值的效果。
 
-变量放在名字是rodata，类型是BPF_MAP_TYPE_ARRAY的map中。x
-
-这是用户态程序调用的参数：
+变量放在名字是rodata，类型是BPF_MAP_TYPE_ARRAY的map中。这是用户态程序调用的参数：
 
 ```
 bpf(BPF_MAP_CREATE, {map_type=BPF_MAP_TYPE_ARRAY, key_size=4, value_size=9, max_entries=1, map_flags=BPF_F_RDONLY_PROG|BPF_F_MMAPABLE, inner_map_fd=0, map_name="tp_execv.rodata", map_ifindex=0, btf_fd=3, btf_key_type_id=0, btf_value_type_id=65, btf_vmlinux_value_type_id=0}, 120) = 6
@@ -106,7 +93,7 @@ if (mmapable) {
 ```
 那么这个map的地址空间分配为何要使用**VM_USERMAP**这个标志呢？
 
-- ###### 就是实现了mmap，vmalloc_user + remap_vmalloc_range
+1. ###### 就是实现了mmap，vmalloc_user + remap_vmalloc_range
 
     * vmalloc申请一段不连续的物理地址空间，映射到连续的内核虚拟地址上。
     * vmalloc_user申请一段不连续的物理地址空间，映射到连续的虚拟地址给user space使用。疑问，这个地址是在User Addresses范围内？不在User Addresses范围，而是在Kernel Addresses范围，只是在分配的vma打上VM_USERMAP的标志。相当于在内核连续地址空间范围内标识一块范围，这个是用户空间使用的。
@@ -114,7 +101,7 @@ if (mmapable) {
     * vmalloc_user的实践。看到分配的地址是大于0xffff8000000000的，还是内核地址空间。https://www.coolcou.com/linux-kernel/linux-kernel-memory-management-api/the-linux-kernel-vmalloc-user.html
     * VM_USERMAP，也是配合函数remap_vmalloc_range使用的，因为这块地址是要用在User Addresses的，所以要重新进行映射，remap_vmalloc_range - map vmalloc pages to userspace。
 
-- 小结
+2. 小结
 
     - 全局变量使用bpf_object__init_global_data_maps
 
@@ -192,14 +179,13 @@ if (mmapable) {
         }
         ```
 
-
-5. ##### dump出对应的源码和bpf指令，在verifier报错后可检查指令
+### dump出对应的源码和bpf指令，在verifier报错后可检查指令
 
 ```
 llvm-objdump -S --no-show-raw-insn tp_execve.kern.o
 ```
 
-6. ##### bfptool工具生成xxx.skel.h文件
+### bfptool工具生成xxx.skel.h文件
 
 解除对xxx.kern.o的依赖。程序中不用`bpf_object__load`。bpftool gen skeleton %.kern.o > %.skel.h。
 
@@ -209,11 +195,11 @@ $(call msg,GEN-SKEL,$@)
 $(Q)$(BPFTOOL) gen skeleton $< > $@
 ```
 
-7. ##### open bpf kernel object
+### Open bpf  kernel object
 
 创建struct bpf_object*对象。加载obj文件用`bpf_object__open_file`，在skel.h中创建obj使用`bpf_object__open_mem`
 
-8. ##### 查看正在使用BPF Map
+### 查看正在使用BPF Map
 
 ```
 [root@Thor-CI ~]# bpftool map
@@ -273,253 +259,286 @@ $(Q)$(BPFTOOL) gen skeleton $< > $@
                 }
 ```
 
-9. ##### bpf_trace_prink的限制
+### bpf_trace_prink的限制
 
-    - 最大只支持3个参数。
+- 最大只支持3个参数。
 
-    - 程序共享输出共享 `/sys/kernel/debug/tracing/trace_pipe` 文件 。
+- 程序共享输出共享 `/sys/kernel/debug/tracing/trace_pipe` 文件 。
 
-    - 该实现方式在数据量大的时候，性能也存在一定的问题 。
+- 该实现方式在数据量大的时候，性能也存在一定的问题 。
 
-10. ##### 创建BPF_MAP_TYPE_SOCKMAP、BPF_MAP_TYPE_SOCKHASH两种类型的map失败
+- 应为format只支持%d %i %u %x %ld %li %lu %lx %lld %lli %llu %llx %p %pB %pks %pus %s。
 
-    ```
-    libbpf: Error in bpf_create_map_xattr(sock_ops_map):Invalid argument(-22). Retrying without BTF.
-    libbpf: map 'sock_ops_map': failed to create: Invalid argument(-22)
-    ```
+### 创建BPF_MAP_TYPE_SOCKMAP、BPF_MAP_TYPE_SOCKHASH两种类型的map失败
 
-    原因是内核编译时没有配置 CONFIG_BPF_STREAM_PARSER ，在代码中可以查看到
+```
+libbpf: Error in bpf_create_map_xattr(sock_ops_map):Invalid argument(-22). Retrying without BTF.
+libbpf: map 'sock_ops_map': failed to create: Invalid argument(-22)
+```
 
-    ```
-    #if defined(CONFIG_BPF_STREAM_PARSER)
-    BPF_MAP_TYPE(BPF_MAP_TYPE_SOCKMAP, sock_map_ops)
-    BPF_MAP_TYPE(BPF_MAP_TYPE_SOCKHASH, sock_hash_ops)
-    #endif
-    ```
+原因是内核编译时没有配置 CONFIG_BPF_STREAM_PARSER ，在代码中可以查看到
 
-    只有使用 CONFIG_BPF_STREAM_PARSER=y重新编译内核。
+```
+#if defined(CONFIG_BPF_STREAM_PARSER)
+BPF_MAP_TYPE(BPF_MAP_TYPE_SOCKMAP, sock_map_ops)
+BPF_MAP_TYPE(BPF_MAP_TYPE_SOCKHASH, sock_hash_ops)
+#endif
+```
 
-11. ##### 编译内核支持BTF、BPF_MAP_TYPE_SOCKMAP、BPF_MAP_TYPE_SOCKHASH
+配置.config，CONFIG_BPF_STREAM_PARSER=y，重新编译内核。最好配置debug模式。
 
-      ```
-      CONFIG_DEBUG_INFO_BTF=y
-      CONFIG_BPF_STREAM_PARSER=y
-      ```
+```
+  CONFIG_DEBUG_INFO_BTF=y
+  CONFIG_BPF_STREAM_PARSER=y
+  CONFIG_DEBUG_INFO=y                     # with debug symbols
+```
 
-      内核编译、安装流程安装工具
+```
+struct bpf_map_def SEC( "maps" ) sock_ops_map = {
+	.type           = BPF_MAP_TYPE_SOCKHASH,
+	.key_size       = sizeof(struct sock_key),
+	.value_size     = sizeof(int),
+	.max_entries    = 65535,
+	.map_flags      = 0,
+};
+```
 
-    ```
-    yum install rpm-devel;  
-    yum install rpmdevtools; 
-    yum groupinstall "Development tools"
-    yum module install llvm-toolset
-    ```
+上面的定义方式能**正确运行**，如果使用下面的方式创建map时会报错：Error in bpf_create_map_xattr(sock_ops_map):ERROR: strerror_r(-524)=22(-524)。
 
-​		删除多余的内核， yum remove $(rpm -qa | grep kernel | grep -v $(uname -r)) 
+```
+struct {
+	__uint( type, BPF_MAP_TYPE_SOCKHASH );
+	__uint( max_entries, 65535 );
+	__type( key, struct sock_key );
+	__type( value, __s32 );
+	__uint( map_flags, 0 );
+	__uint( key_size, sizeof( struct sock_key ) );
+	__uint( value_size, sizeof( __s32 ) );
+} sock_ops_map_1 SEC( ".maps" );
+```
 
-12. ##### BPF_MAP_TYPE_SOCKHASH定义方式
+但其它类型的map却没有问题，例如BPF_MAP_TYPE_HASH，这种差异问题需要深入研究代码，查看内核源码是可以按上面的编写方式的。
 
-        ```
-        struct bpf_map_def SEC( "maps" ) sock_ops_map = {
-        	.type           = BPF_MAP_TYPE_SOCKHASH,
-        	.key_size       = sizeof(struct sock_key),
-        	.value_size     = sizeof(int),
-        	.max_entries    = 65535,
-        	.map_flags      = 0,
-        };
-        ```
-    
-        上面的定义方式能**正确运行**，如果使用下面的方式创建map时会报错：Error in bpf_create_map_xattr(sock_ops_map):ERROR: strerror_r(-524)=22(-524)。
-    
-        ```
-        struct {
-        	__uint( type, BPF_MAP_TYPE_SOCKHASH );
-        	__uint( max_entries, 65535 );
-        	__type( key, struct sock_key );
-        	__type( value, __s32 );
-        	__uint( map_flags, 0 );
-        	__uint( key_size, sizeof( struct sock_key ) );
-        	__uint( value_size, sizeof( __s32 ) );
-        } sock_ops_map_1 SEC( ".maps" );
-        ```
-    
-        但其它类型的map却没有问题，例如BPF_MAP_TYPE_HASH，这种差异问题需要深入研究代码，查看内核源码是可以按上面的编写方式的。
-    
-        ```
-        struct {
-        	__uint(type, BPF_MAP_TYPE_HASH);
-        	__uint(max_entries, 64);
-        	__type(key, __u32);
-        	__type(value, __u64);
-        } sockhash SEC(".maps");
-        ```
-    
-        加载prog的命令：**bpftool prog load tcp_accelerate_sockops.kern.o "/sys/fs/bpf/bpf_sockops"**
+```
+struct {
+	__uint(type, BPF_MAP_TYPE_HASH);
+	__uint(max_entries, 64);
+	__type(key, __u32);
+	__type(value, __u64);
+} sockhash SEC(".maps");
+```
 
-13. ##### bpftool cgroup attach使用cgroup V2
+加载prog的命令 **bpftool prog load tcp_accelerate_sockops.kern.o "/sys/fs/bpf/bpf_sockops"**
 
-        当前systemd支持三种cgroup模式，分别是
-    
-        1. legacy， 采用 cgroup v1
-        2. hybrid，混杂模式，既挂载 cgroup v1 也挂载 cgroup v2， 但是在该模式下，cgroup v2 下不使能任何 controller，不用于资源管理,参考[systemd 模式说明](https://github.com/systemd/systemd/pull/10161/files)
-        3. unified, 纯粹使用 cgroup v2
-    
-        检查当前系统是否支持cgroup v2
-    
-        ```
-        [root@Thor-CI sockredir]# grep cgroup /proc/filesystems
-        nodev	cgroup
-        nodev	cgroup2
-        ```
-    
-        在内核中开启cgroup v2
-    
-        ```
-        grubby --update-kernel=ALL --args="systemd.unified_cgroup_hierarchy=1"
-        reboot
-        ```
-    
-        检查cgroup v2是否生效
-    
-        ```
-        [root@Thor-CI sockredir]# mount | grep cgroup
-        cgroup2 on /sys/fs/cgroup type cgroup2 (rw,nosuid,nodev,noexec,relatime,nsdelegate)
-        tmpfs on /usr/local/aegis/cgroup type tmpfs (rw,relatime,size=51200k)
-        ```
+### bpftool cgroup attach使用cgroup V2
 
-       **bpftool cgroup是依赖cgroup v2的**。 
+当前systemd支持三种cgroup模式，分别是
 
-       相关资料
+1. legacy， 采用 cgroup v1
+2. hybrid，混杂模式，既挂载 cgroup v1 也挂载 cgroup v2， 但是在该模式下，cgroup v2 下不使能任何 controller，不用于资源管理,参考[systemd 模式说明](https://github.com/systemd/systemd/pull/10161/files)
+3. unified, 纯粹使用 cgroup v2
 
-        [centos8使用grubby修改内核启动参数 - TinyChen's Studio](https://tinychen.com/20201118-centos8-use-grubby-modify-kernel/)
-    
-        [详解Cgroup V2 | Zorro’s Linux Book (zorrozou.github.io)](https://zorrozou.github.io/docs/详解Cgroup V2.html)
-    
-        [Cgroup V2 Notes | Lifeng (gitee.io)](https://lifeng2221dd1.gitee.io/2020/11/12/cgroup-v2/)
+检查当前系统是否支持cgroup v2
 
-14. ##### SEC("name")和prog _type、attach_type关系
+```
+[root@Thor-CI sockredir]# grep cgroup /proc/filesystems
+nodev	cgroup
+nodev	cgroup2
+```
 
-      文件libbpf.c中定义了name和prog_type与attach_type的对应关系。部分如下。
+在内核中开启cgroup v2
 
-               static const *struct* bpf_sec_def section_defs[] = {
-                 BPF_PROG_SEC("socket",     BPF_PROG_TYPE_SOCKET_FILTER),
-                 BPF_PROG_SEC("sk_reuseport",    BPF_PROG_TYPE_SK_REUSEPORT),
-                 SEC_DEF("kprobe/", KPROBE,	.attach_fn = attach_kprobe),
-                 BPF_APROG_SEC("sockops",    BPF_PROG_TYPE_SOCK_OPS,	BPF_CGROUP_SOCK_OPS),
-               };
+```
+grubby --update-kernel=ALL --args="systemd.unified_cgroup_hierarchy=1"
+reboot
+```
 
-15. ##### ebpf的所有hooks
+检查cgroup v2是否生效
 
-      查看完成的ebpf hooks列表，文件/uapi/linux/bpf.h中，枚举类型*enum* bpf_attach_type 就是所有的hook点。在libbpf.c代码中通过函数libbpf_prog_type_by_name传入sec name可以获取对应的prog type和attach type。
+```
+[root@Thor-CI sockredir]# mount | grep cgroup
+cgroup2 on /sys/fs/cgroup type cgroup2 (rw,nosuid,nodev,noexec,relatime,nsdelegate)
+tmpfs on /usr/local/aegis/cgroup type tmpfs (rw,relatime,size=51200k)
+```
 
-           (gdb) p sec_name
-           $5 = 0x872f70 "sockops"
-           (gdb) n
-           1518			bpf_program__set_ifindex(pos, ifindex);
-           (gdb) p pos
-           $6 = (struct bpf_program *) 0x872e90
-           (gdb) p ifindex
-           $7 = 0
-           (gdb) p expected_attach_type
-           $8 = BPF_CGROUP_SOCK_OPS
-           (gdb) p prog_type
-           $9 = BPF_PROG_TYPE_SOCK_OPS
+ 相关资料
 
-      上面的gdb调试结果可清晰的显示这种关系。这篇文章对prog type有详细的说明，[BPF: A Tour of Program Types (oracle.com)](https://blogs.oracle.com/linux/post/bpf-a-tour-of-program-types)
+- [centos8使用grubby修改内核启动参数 - TinyChen's Studio](https://tinychen.com/20201118-centos8-use-grubby-modify-kernel/)
 
-16. ##### ebpf对象持久化，文件系统/sys/fs/bpf
+- [详解Cgroup V2 | Zorro’s Linux Book (zorrozou.github.io)](https://zorrozou.github.io/docs/详解Cgroup V2.html)
 
-      [Persistent BPF objects [LWN.net\]](https://lwn.net/Articles/664688/)，一般我们会编写一个user space的程序来加载kern的prog，这样ebpf程序的生命周期和用户态程序一致，监控采集显示的程序基本如此。可有些模式下的prog程序是需要类似守护，例如流量控制，转发控制这些，所以在kernel4.4版本提供了持久化能力。会创建一个pin fd在该文件系统下，这个fd就代表一个ebpf object。如果要unpin这个ebpf object，可以直接删除这个文件。
+- [Cgroup V2 Notes | Lifeng (gitee.io)](https://lifeng2221dd1.gitee.io/2020/11/12/cgroup-v2/)
 
-           err = bpf_obj_pin(bpf_program__fd(prog), pinfile);
-           err = bpf_object__pin_maps(obj, pinmaps);
+### SEC("name")和prog _type、attach_type关系
 
-      使用bpftool命令来持久化ebpf object：
+ 文件libbpf.c中定义了name和prog_type与attach_type的对应关系。部分如下。
 
-      ```
-      bpftool prog load tcp_accelerate_sockops.kern.o "/sys/fs/bpf/bpf_sockops"
-      [root@192 linux]# bpftool prog
-      8: sock_ops  name bpf_sockops_v4  tag 532c5c6d79f1461d  gpl
-      	loaded_at 2021-10-01T14:26:57+0800  uid 0
-        	xlated 936B  jited 533B  memlock 4096B  map_ids 6
-         	btf_id 4
-      [root@192 tcp_accelerate]# rm /sys/fs/bpf/bpf_sockops
-      rm: remove regular empty file '/sys/fs/bpf/bpf_sockops'? y
-      ```
+```
+static const struct bpf_sec_def section_defs[] = {
+	SEC_DEF("socket",		SOCKET_FILTER, 0, SEC_NONE | SEC_SLOPPY_PFX),
+	SEC_DEF("sk_reuseport/migrate",	SK_REUSEPORT, BPF_SK_REUSEPORT_SELECT_OR_MIGRATE, SEC_ATTACHABLE | SEC_SLOPPY_PFX),
+	SEC_DEF("sk_reuseport",		SK_REUSEPORT, BPF_SK_REUSEPORT_SELECT, SEC_ATTACHABLE | SEC_SLOPPY_PFX),
+	SEC_DEF("kprobe+",		KPROBE,	0, SEC_NONE, attach_kprobe),
+	SEC_DEF("uprobe+",		KPROBE,	0, SEC_NONE, attach_uprobe),
+	SEC_DEF("kretprobe+",		KPROBE, 0, SEC_NONE, attach_kprobe),
+	SEC_DEF("uretprobe+",		KPROBE, 0, SEC_NONE, attach_uprobe),
+	SEC_DEF("kprobe.multi+",	KPROBE,	BPF_TRACE_KPROBE_MULTI, SEC_NONE, attach_kprobe_multi),
+	SEC_DEF("kretprobe.multi+",	KPROBE,	BPF_TRACE_KPROBE_MULTI, SEC_NONE, attach_kprobe_multi),
+	SEC_DEF("usdt+",		KPROBE,	0, SEC_NONE, attach_usdt),
+	SEC_DEF("tc",			SCHED_CLS, 0, SEC_NONE),
+	......
+```
 
-17. ##### kernel_src/samples/bpf，tools/bpf/bpftool 代码编译
+在实际开发中，**sec只要前缀匹配就能对应上type**。
 
-      在[RPM Search (pbone.net)](http://rpm.pbone.net/)搜索源码rpm包，或[Index of /Linux/cern/centos/7/updates/Source/SPackages (riken.jp)](http://ftp.riken.jp/Linux/cern/centos/7/updates/Source/SPackages/)这个网站。
+```
+static const struct bpf_sec_def *find_sec_def(const char *sec_name)
+{
+	int i, n = ARRAY_SIZE(section_defs);
+	for (i = 0; i < n; i++) {
+		if (strncmp(sec_name, section_defs[i].sec, section_defs[i].len))
+			continue;
+		return &section_defs[i];
+	}
+	return NULL;
+}
+```
 
-            rpm2cpio kernel-4.18.0-305.el8.src.rpm | cpio -idmv
-            rpm -ivh kernel-4.18.0-305.el8.src.rpm
-            xz -d linux-4.18.0-305.el8.tar.xz
-            tar -xvf linux-4.18.0-305.el8.tar -C /usr/src
-            cp /boot/config-`uname -r` ./.config
-            
-            CONFIG_DEBUG_INFO=y                     # with debug symbols
-            make mrproper
-            make scripts
-            make -j8
-            make headers_install 					# /usr/include/linux
-            make modules -j8
-            make vmlinux
-            make bzImage -j8
-            make install
-            make modules_install
-            
-            make M=samples/bpf V=1
-            cd tools/bpf/bpftool
-            make V=1
-            make install
+注册的时候，明确了sec的len。
 
-      在编译时报错，遇到
+```
+#define SEC_DEF(sec_pfx, ptype, ...)                                           \
+	{                                                                      \
+		.sec = sec_pfx, .len = sizeof(sec_pfx) - 1,                    \
+		.prog_type = BPF_PROG_TYPE_##ptype, __VA_ARGS__                \
+	}
+```
 
-            ./include/linux/page-flags-layout.h:6:10: fatal error: 'generated/bounds.h' file not found
-            ./include/linux/jiffies.h:13:10: fatal error: 'generated/timeconst.h' file not found
+### eBPF的所有hooks
 
-      先执行下make -j 4，编译下内核源码，这些文件就会生成，编译参考文档：[How to compile and install Linux Kernel 5.6.9 from source code - nixCraft (cyberciti.biz)](https://www.cyberciti.biz/tips/compiling-linux-kernel-26.html)
+查看完整的ebpf hooks列表，文件/uapi/linux/bpf.h中，枚举类型*enum* bpf_attach_type 就是所有的hook点。在libbpf.c代码中通过函数libbpf_prog_type_by_name传入sec name可以获取对应的prog type和attach type。
 
-18. ##### ebpf程序的安全性
+```
+   (gdb) p sec_name
+   $5 = 0x872f70 "sockops"
+   (gdb) n
+   1518			bpf_program__set_ifindex(pos, ifindex);
+   (gdb) p pos
+   $6 = (struct bpf_program *) 0x872e90
+   (gdb) p ifindex
+   $7 = 0
+   (gdb) p expected_attach_type
+   $8 = BPF_CGROUP_SOCK_OPS
+   (gdb) p prog_type
+   $9 = BPF_PROG_TYPE_SOCK_OPS
+```
 
-          字节码只能够调用一小部分指定的 eBPF 帮助函数
-          eBPF程序不允许包含无法到达的指令，防止加载无效代码，延迟程序的终止。 
-          eBPF 程序中循环次数限制且必须在有限时间内结束。
+上面的gdb调试结果可清晰的显示这种关系。这篇文章对prog type有详细的说明，[BPF: A Tour of Program Types (oracle.com)](https://blogs.oracle.com/linux/post/bpf-a-tour-of-program-types)
 
-19. ##### bpf函数
+### eBPF对象持久化，文件系统/sys/fs/bpf
 
-          内核：uapi/linux/bpf.h、tools/lib/bpf/bpf_helper_defs.h 文件中，*enum* bpf_func_id定义的都是可直接调用的helper functions。 
-          用户：[LIBBPF API — libbpf documentation](https://libbpf.readthedocs.io/en/latest/api.html) 
-          CO-RE：tools/lib/bpf/bpf_core_read.h
+[Persistent BPF objects [LWN.net\]](https://lwn.net/Articles/664688/)，一般我们会编写一个user space的程序来加载kern的prog，这样ebpf程序的生命周期和用户态程序一致，监控采集显示的程序基本如此。可有些模式下的prog程序是需要类似守护，例如流量控制，转发控制这些，所以在kernel4.4版本提供了持久化能力。会创建一个pin fd在该文件系统下，这个fd就代表一个ebpf object。如果要unpin这个ebpf object，可以直接删除这个文件。
 
-20. ##### 字段访问，获取父进程pid
+```
+   err = bpf_obj_pin(bpf_program__fd(prog), pinfile);
+   err = bpf_object__pin_maps(obj, pinmaps);
+```
 
-       ```
-       task = (struct task_struct *)bpf_get_current_task();
-       pid = BPF_PROBE_READ(task, real_parent, pid);
-       ```
+  使用bpftool命令来持久化ebpf object：
 
-       但BPF_PROBE_READ实际还是通过bpf_probe_read_kernel，基于编译的内核vmlinux.h来读取字段的。如果和目标内核结构偏移量存在差异，读取的数据不是预期的。 
+```
+  [root@192 linux]# bpftool prog load tcp_accelerate_sockops.kern.o "/sys/fs/bpf/bpf_sockops"
+  [root@192 linux]# bpftool prog
+  8: sock_ops  name bpf_sockops_v4  tag 532c5c6d79f1461d  gpl
+  	loaded_at 2021-10-01T14:26:57+0800  uid 0
+    	xlated 936B  jited 533B  memlock 4096B  map_ids 6
+     	btf_id 4
+  [root@192 tcp_accelerate]# rm /sys/fs/bpf/bpf_sockops
+  rm: remove regular empty file '/sys/fs/bpf/bpf_sockops'? y
+```
 
-      libbpf` 提供了新的宏 `**BPF_CORE_READ**`，它使用 `__builtin_preserve_access_index` 包住被读取的内核空间地址，比如 `task->real_parent`, `real_parent->pid`，那么在编译阶段会将访问路径 `0:57`，`0:54` 作为 relocation 的符号保存在 `.BTF.ext` section 里，其中 `57` 和 `54` 分别是 `real_parent` 和 `pid` 在 v5.8 内核 `task_struct` 结构体里的第 57 和 54 个字段。加载器会根据访问路径来比较源和当前内核对应数据结构的差异。当找到匹配对象后，那么将会以当前内核的偏移地址来修改原先的指令，保证程序可以正确运行；否则将会加载失败。
+##### 内核中eBPF代码编译
 
-21. ##### **bpf_map_update_elem**
+在[RPM Search (pbone.net)](http://rpm.pbone.net/)搜索源码rpm包，或[Index of /Linux/cern/centos/7/updates/Source/SPackages (riken.jp)](http://ftp.riken.jp/Linux/cern/centos/7/updates/Source/SPackages/)这个网站。
 
-         BPF_ANY：0，表示如果元素存在，内核将更新元素；如果不存在，则在映射中创建该元素。
-         BPF_NOEXIST：1，表示仅在元素不存在时，内核创建元素。
-         BPF_EXIST：2，表示仅在元素存在时，内核更新元素。
-         内核头文件bpf/bpf_helpers.h，用户空间程序头文件tools/lib/bpf/bpf.h
-         用户空间修改映射，区别在于第一个参数改为文件描述符来访问。
+下载好源码包执行下面命令，解压内核代码
 
-22. ##### Perf event
+    rpm2cpio kernel-4.18.0-305.el8.src.rpm | cpio -idmv
+    rpm -ivh kernel-4.18.0-305.el8.src.rpm
+    xz -d linux-4.18.0-305.el8.tar.xz
+    tar -xvf linux-4.18.0-305.el8.tar -C /usr/src
 
-     将BPF代码附加到Perf事件上。Perf事件程序类型定义为BPF_PROG_SEC("perf_event", BPF_PROG_TYPE_PERF_EVENT)，Perf是内核的内部分析器，可以产生硬件和软件的性能数据事件。
+配置内核，编译
 
-     我们可以用Perf事件程序监控很多系统信息，从计算机的CPU到系统中运行的任何软件。当BPF程序附加到Perf事件上时，每次Perf产生分析数据时，程序代码都将被执行。   
+```
+make mrproper
+make scripts
+make -j8
+make headers_install 					# /usr/include/linux
+make modules -j8
+make vmlinux
+make bzImage -j8
+make install
+make modules_install
+```
 
-     SEC("perf_event")
+```
+make M=samples/bpf V=1
+cd tools/bpf/bpftool
+make V=1
+make install
+```
 
-23. ##### bpf_get_stackid获取进程用户态、内核态堆栈
+编译遇到如下报错时：
+
+```
+    ./include/linux/page-flags-layout.h:6:10: fatal error: 'generated/bounds.h' file not found
+    ./include/linux/jiffies.h:13:10: fatal error: 'generated/timeconst.h' file not found
+```
+
+先执行下make -j 4，编译下内核源码，这些文件就会生成，编译参考文档：[How to compile and install Linux Kernel 5.6.9 from source code - nixCraft (cyberciti.biz)](https://www.cyberciti.biz/tips/compiling-linux-kernel-26.html)
+
+### eBPF程序的安全性
+
+- 字节码只能够调用一小部分指定的 eBPF 帮助函数
+- eBPF程序不允许包含无法到达的指令，防止加载无效代码，延迟程序的终止。 
+- eBPF 程序中循环次数限制且必须在有限时间内结束。
+
+### BPF系统调用
+
+- 内核：uapi/linux/bpf.h、tools/lib/bpf/bpf_helper_defs.h 文件中，*enum* bpf_func_id定义的都是可直接调用的helper functions。 
+- 用户：[LIBBPF API — libbpf documentation](https://libbpf.readthedocs.io/en/latest/api.html) 
+- CO-RE：tools/lib/bpf/bpf_core_read.h
+
+### BPF程序字段访问
+
+```
+   task = (struct task_struct *)bpf_get_current_task();
+   pid = BPF_PROBE_READ(task, real_parent, pid);
+```
+
+BPF_PROBE_READ实际还是通过bpf_probe_read_kernel，基于编译的内核vmlinux.h来读取字段的。如果和目标内核结构偏移量存在差异，读取的数据不是预期的。 
+
+libbpf` 提供了新的宏 `**BPF_CORE_READ**`，它使用 `__builtin_preserve_access_index` 包住被读取的内核空间地址，比如 `task->real_parent`, `real_parent->pid`，那么在编译阶段会将访问路径 `0:57`，`0:54` 作为 relocation 的符号保存在 `.BTF.ext` section 里，其中 `57` 和 `54` 分别是 `real_parent` 和 `pid` 在 v5.8 内核 `task_struct` 结构体里的第 57 和 54 个字段。加载器会根据访问路径来比较源和当前内核对应数据结构的差异。当找到匹配对象后，那么将会以当前内核的偏移地址来修改原先的指令，保证程序可以正确运行；否则将会加载失败。
+
+### 函数bpf_map_update_elem
+
+函数参数：
+
+ BPF_ANY：0，表示如果元素存在，内核将更新元素；如果不存在，则在映射中创建该元素。
+ BPF_NOEXIST：1，表示仅在元素不存在时，内核创建元素。
+ BPF_EXIST：2，表示仅在元素存在时，内核更新元素。
+
+ 内核头文件bpf/bpf_helpers.h，用户空间程序头文件tools/lib/bpf/bpf.h
+ 用户空间修改映射，区别在于第一个参数改为文件描述符来访问。
+
+### 使用Perf Event
+
+将BPF代码附加到Perf事件上。Perf事件程序类型定义为BPF_PROG_SEC("perf_event", BPF_PROG_TYPE_PERF_EVENT)，Perf是内核的内部分析器，可以产生硬件和软件的性能数据事件。
+
+我们可以用Perf事件程序监控很多系统信息，从计算机的CPU到系统中运行的任何软件。当BPF程序附加到Perf事件上时，每次Perf产生分析数据时，程序代码都将被执行，SEC("perf_event")。
+
+12. ##### bpf_get_stackid获取进程用户态、内核态堆栈
 
      - 应用程序的函数地址转换为symbols name。查看程序elf格式的section，所有symbols信息保存在.symtab 表中。
 
@@ -570,13 +589,13 @@ $(Q)$(BPFTOOL) gen skeleton $< > $@
                 7f52ff945000-7f52ff949000 r--p 001bb000 fd:00 7445                       /usr/lib64/libc-2.28.so
                 7f52ff949000-7f52ff94b000 rw-p 001bf000 fd:00 7445                       /usr/lib64/libc-2.28.so
 
-24. ##### 获取内核所使用的数据结构，解除对内核代码头文件的依赖
+13. ##### 获取内核所使用的数据结构，解除对内核代码头文件的依赖
 
            bpftool btf dump file /sys/kernel/btf/vmlinux format c > vmlinux.h
 
      判断系统是否支持BTF，这个文件可作为标志。BTF(BPF Type Format, BPF类型格式)是一个元数据的格式，用来将BPF程序的源代码信息编码到调试信息中。调试信息包括BPF程序、映射结构等很多其它信息。BTF调试信息可以内嵌到vmlinux二进制文件中，或者随BPF程序一同使用原生Clang编译时生成。除了描述BPF程序之外，BTF正在成为一个通用的、用来描述所有内核数据结构的格式，在某些方面，它正在成为内核调试信息文件的一种轻量级替代方案，而且比使用内核头文件更加完整和可靠。
 
-25. ##### selinux和bfptool命令冲突
+14. ##### selinux和bfptool命令冲突
 
      执行bpftool报错
 
@@ -589,7 +608,7 @@ $(Q)$(BPFTOOL) gen skeleton $< > $@
          ausearch -c 'bpftool' --raw | audit2allow -M my-bpftool
          semodule -X 300 -i my-bpftool.pp
 
-26. ##### profile eEBPF程序
+15. ##### profile eEBPF程序
 
      kernel.bpf_stats_enabled，用来开启收集eBPF程序的状态信息，主要是run_time_ns和run_cnt这两个参数。前者代表内核累计花了多少时间运行这个BPF程序，后者是这个BPF程序累计运行了多少次。
 
@@ -597,7 +616,7 @@ $(Q)$(BPFTOOL) gen skeleton $< > $@
      - 使用`cat /proc/<pid>/fdinfo/<bpf_prog_fd>`命令，执行后直接显示结果
      - 使用`BPF_OBJ_GET_INFO_BY_FD`的BPF系统调用方法，编程获取结果
 
-27. ##### CO-RE
+16. ##### CO-RE
 
      一次编译，到处运行，Compile Once – Run Everywhere，将它依赖的软件栈和数据集中在一起.
 
@@ -606,21 +625,21 @@ $(Q)$(BPFTOOL) gen skeleton $< > $@
      - BPF loader (libbpf)：根据内核的BTF和BPF程序，调整编译后的BPF代码，使其适合在目标内核上运行。
      - 内核：虽然对 BPF CO-RE 完全不感知，但提供了一些 BPF 高级特性，使某些高级场景成为可能。
 
-28. ##### cursor_advance宏的作用
+17. ##### cursor_advance宏的作用
 
         ```
         /* Packet parsing state machine helpers. */
         #define cursor_advance(_cursor, _len) \
           ({ void *_tmp = _cursor; _cursor += _len; _tmp; })
         ```
-    
+        
         调用代码如下：
         ```
         struct ethernet_t *ethernet = cursor_advance(cursor, sizeof(*ethernet));
         ```
-    
+        
         代码结果等价于：
-    
+        
         ```
         {
         	void *__tmp = cursor;
@@ -629,7 +648,7 @@ $(Q)$(BPFTOOL) gen skeleton $< > $@
         }
         ```
 
-29. #####  安装内核
+18. #####  安装内核
 
        列出仓库中内核：dnf --enablerepo="ol8_baseos_latest" --enablerepo="elrepo-kernel" list available | grep kernel
 
@@ -643,11 +662,11 @@ $(Q)$(BPFTOOL) gen skeleton $< > $@
 
        解压rpm源码包：cd /usr/src/kernels/，cp linux-4.18.0-348.7.1.el8_5.tar.xz ./，unxz linux-4.18.0-348.7.1.el8_5.tar.xz，tar xf linux-4.18.0-348.7.1.el8_5.tar 
 
-30. ##### bpftool工具使用
+19. ##### bpftool工具使用
 
           1. bpftool prog dump xlated id 105。
 
-31. ##### XDP Action小结
+20. ##### XDP Action小结
 
       1. XDP_DROP：在驱动层丢弃报文，通常用于实现DDos或防火墙。(drop)。
       2. XDP_PASS：允许报文上送到内核网络栈，同时处理该报文的CPU会分配并填充一个`skb`，将其传递到GRO引擎。之后的处理与没有XDP程序的过程相同。
@@ -657,7 +676,7 @@ $(Q)$(BPFTOOL) gen skeleton $< > $@
 
      对于TX和REDIRECT操作，通常需要做一些数据包数据转换（例如重写mac地址）。
 
-32. ##### XDP xdp_md结构
+21. ##### XDP xdp_md结构
 
      ```
      struct xdp_md {
@@ -676,13 +695,13 @@ $(Q)$(BPFTOOL) gen skeleton $< > $@
 
      前三项其实是指针，data指向数据包的开始，data_end指向数据包的结束，data_meta指向元数据区域，xdp程序可以使用该元数据区域存储额外的伴随数据包的元数据。
 
-33. ##### BPF_MAP_TYPE_PERCPU_ARRAY数据改变的原子性
+22. ##### BPF_MAP_TYPE_PERCPU_ARRAY数据改变的原子性
 
         BPF_MAP_TYPE_PERCPU_ARRAY returns a data record specific to current CPU and XDP hooks runs under Softirq, which makes it safe to update without atomic operations.
-    
+        
         从BPF_MAP_TYPE_PERCPU_ARRAY中查询的value，修改不用加锁。
 
-34. ##### eBPF中不同类型Program的作用
+23. ##### eBPF中不同类型Program的作用
 
        [BPF program types and their principles - actorsfit](https://blog.actorsfit.com/a?ID=01750-a415789d-fe05-4a5f-8aa4-3183a1c6d97b)
 
@@ -758,6 +777,6 @@ $(Q)$(BPFTOOL) gen skeleton $< > $@
 
              What can you do? Allow or deny network access on various socket-related events (BPF_CGROUP_INET_SOCK_CREATE, BPF_CGROUP_SOCK_OPS). As mentioned above, the BPF program should return 1 to allow access. Any other value will cause the function __cgroup_bpf_run_filter_sk() to return -EPERM, which will be propagated to the caller, thus discarding the packet.
 
-35. 资料
+24. 资料
 
      [透视Linux内核，BPF神奇的Linux技术入门-51CTO.COM](https://os.51cto.com/article/703114.html)
