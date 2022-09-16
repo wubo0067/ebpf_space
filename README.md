@@ -564,37 +564,30 @@ libbpf` 提供了新的宏 `**BPF_CORE_READ**`，它使用 `__builtin_preserve_a
      BPF_F_USER_STACK标志可以获取用户空间堆栈列表，栈帧中保存的都是虚拟内存地址，将地址转变为源代码中的函数名（demangle）
 
       - /proc/pid/maps文件，拟地址在该文件列出的范围里。六列的信息依次为：本段在虚拟内存中的地址范围、本段的权限、偏移地址，即指本段映射地址在文件中的偏移、主设备号与次设备号、文件索引节点号、映射的文件名。kernel会将elf的代码段、数据段映射到虚拟地址空间。
-
-
-      - 函数名在elf文件中，核心是**elf格式和vma之间的关系**，找到这种对应关系才能通过地址找到函数名。
-
-
-      - elf是section，maps是segment，前者是链接视角，后者是运行视角。比如代码在链接时放到了text代码段，这个段就是section，同理还有data、bss等，可当执行文件被加载到进程VM中的不同区域时，这个段就是segment了。readelf -l /usr/libexec/netdata/plugins.d/apps.plugin，elf中**只有PT_LOAD段才会被加载到VMA中**。通过这个命令可以看到那些段被加载。(https://blog.csdn.net/rockrockwu/article/details/81707909)，[c - relationship between VMA and ELF segments - Stack Overflow](https://stackoverflow.com/questions/33756119/relationship-between-vma-and-elf-segments)
-
-
-      - segment和VMA并不是一一对应的关系，一个segment可能对应多个VMA。这是由segment中的section属性决定的。
-
-
-      - readelf -s 第一列地址是It's (relative) virtual address。我实验的结果第一列就是虚拟地址。
-
-
-      - print_stack() 	**0x00000000005414d0**	rrddim_compare	/usr/sbin/netdata   	0x0，这是bpf_get_stackid返回的帧地址。
-
-
-      - readelf -s 第一列地址是It's (relative) virtual address。我实验的结果第一列就是虚拟地址。
-
-
-      - 但是对于动态库中的函数地址，可以通过/proc/pid/maps中module基地址+readelf第一列的相对地址+偏移量得到函数在地址空间的地址。0x00007f52ff67911b = 0xb + ef110 + 7f52ff58a000
-
-                 0x00007f52ff67911b	__GI___readlink	/usr/lib64/libc-2.28.so	0xb
-              
-                 [root@localhost build]# readelf -s /usr/lib64/libc-2.28.so|grep __GI___readlink
-                  23266: 00000000000ef110    37 FUNC    LOCAL  DEFAULT   14 __GI___readlink
-              
-                 7f52ff58a000-7f52ff746000 r-xp 00000000 fd:00 7445                       /usr/lib64/libc-2.28.so
-                 7f52ff746000-7f52ff945000 ---p 001bc000 fd:00 7445                       /usr/lib64/libc-2.28.so
-                 7f52ff945000-7f52ff949000 r--p 001bb000 fd:00 7445                       /usr/lib64/libc-2.28.so
-                 7f52ff949000-7f52ff94b000 rw-p 001bf000 fd:00 7445                       /usr/lib64/libc-2.28.so
+     
+     - 函数名在elf文件中，核心是**elf格式和vma之间的关系**，找到这种对应关系才能通过地址找到函数名。
+     
+     - elf是section，maps是segment，前者是链接视角，后者是运行视角。比如代码在链接时放到了text代码段，这个段就是section，同理还有data、bss等，可当执行文件被加载到进程VM中的不同区域时，这个段就是segment了。readelf -l /usr/libexec/netdata/plugins.d/apps.plugin，elf中**只有PT_LOAD段才会被加载到VMA中**。通过这个命令可以看到那些段被加载。(https://blog.csdn.net/rockrockwu/article/details/81707909)，[c - relationship between VMA and ELF segments - Stack Overflow](https://stackoverflow.com/questions/33756119/relationship-between-vma-and-elf-segments)
+     
+     - segment和VMA并不是一一对应的关系，一个segment可能对应多个VMA。这是由segment中的section属性决定的。
+     
+     - readelf -s 第一列地址是It's (relative) virtual address。我实验的结果第一列就是虚拟地址。
+     
+     - print_stack() 	**0x00000000005414d0**	rrddim_compare	/usr/sbin/netdata   	0x0，这是bpf_get_stackid返回的帧地址。
+     
+     - readelf -s 第一列地址是It's (relative) virtual address。我实验的结果第一列就是虚拟地址。
+     
+       - 但是对于动态库中的函数地址，可以通过/proc/pid/maps中module基地址+readelf第一列的相对地址+偏移量得到函数在地址空间的地址。0x00007f52ff67911b = 0xb + ef110 + 7f52ff58a000
+     
+                  0x00007f52ff67911b	__GI___readlink	/usr/lib64/libc-2.28.so	0xb
+                         
+                  [root@localhost build]# readelf -s /usr/lib64/libc-2.28.so|grep __GI___readlink
+                   23266: 00000000000ef110    37 FUNC    LOCAL  DEFAULT   14 __GI___readlink
+                         
+                  7f52ff58a000-7f52ff746000 r-xp 00000000 fd:00 7445                       /usr/lib64/libc-2.28.so
+                  7f52ff746000-7f52ff945000 ---p 001bc000 fd:00 7445                       /usr/lib64/libc-2.28.so
+                  7f52ff945000-7f52ff949000 r--p 001bb000 fd:00 7445                       /usr/lib64/libc-2.28.so
+                  7f52ff949000-7f52ff94b000 rw-p 001bf000 fd:00 7445                       /usr/lib64/libc-2.28.so
 
 ### 获取内核所使用的数据结构，解除对内核代码头文件的依赖
 
