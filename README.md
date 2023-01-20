@@ -457,9 +457,12 @@ static const struct bpf_sec_def *find_sec_def(const char *sec_name)
   rm: remove regular empty file '/sys/fs/bpf/bpf_sockops'? y
 ```
 
-### 内核中eBPF代码编译
+### 编译内核以及eBPF代码
 
-在[RPM Search (pbone.net)](http://rpm.pbone.net/)搜索源码rpm包，或[Index of /Linux/cern/centos/7/updates/Source/SPackages (riken.jp)](http://ftp.riken.jp/Linux/cern/centos/7/updates/Source/SPackages/)这个网站。
+- [RPM Search (pbone.net)](http://rpm.pbone.net/)搜索源码rpm包，
+- [Index of /Linux/cern/centos/7/updates/Source/SPackages (riken.jp)](http://ftp.riken.jp/Linux/cern/centos/7/updates/Source/SPackages/)这个网站
+- centos9的源码：[CentOS Stream Mirror](http://mirror.stream.centos.org/9-stream/BaseOS/source/tree/Packages/)，
+- centos8以及之前的内核源码：[Index of / (centos.org)](https://vault.centos.org/)
 
 下载好源码包执行下面命令，解压内核代码
 
@@ -471,14 +474,15 @@ static const struct bpf_sec_def *find_sec_def(const char *sec_name)
 配置内核，编译ebpf sample、libbpf.a
 
 ```
-make mrproper
-make scripts
+make mrproper     # 在编译内核模块时，会用到make mrproper，目的是把下载的内核还原到初始状态（清除掉.o文件，清除掉一些在make之后生成的备份文件，甚至还清除了.config配置文件）。 在make mrproper时，会首先调用make clean
+cp -v /boot/config-$(uname -r) .config
+make menuconfig
 make -j8
 make headers_install 					# /usr/include/linux
-make modules -j8
-make vmlinux
-make bzImage -j8
-make install
+make modules -j8						# 编译内核模块
+make vmlinux							# 编译vmlinux内核映像
+make bzImage -j8						# 生成压缩的内核映像
+make install							# 安装内核映像
 make modules_install
 ```
 
