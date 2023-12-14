@@ -20,6 +20,8 @@ BTF能够用来增强BPF verifier的能力，**能够允许BPF代码直接访问
 
 - .config文件设置CONFIG_DEBUG_INFO_BTF=y，让 Linux 内核在运行时（runtime）一直携带 BTF 信息是可行的
 
+- 如果是oraclelinux系统，需要codeready仓库才能安装下面的包，dnf config-manager --set-enabled ol8_codeready_builder
+
 - 安装dwarves。**yum -y install libdwarves1.x86_64 dwarves.x86_64**，如果配置了CONFIG_DEBUG_INFO_BTF=y则必须安装该包
 
 - 安装**pahole**。一定要用v1.22
