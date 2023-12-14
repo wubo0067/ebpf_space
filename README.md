@@ -475,6 +475,16 @@ static const struct bpf_sec_def *find_sec_def(const char *sec_name)
 
 配置内核，编译ebpf sample、libbpf.a
 
+在最上层makefile中可以设置EXTRAVERSION版本号。
+
+```
+VERSION = 4
+PATCHLEVEL = 18
+SUBLEVEL = 0
+EXTRAVERSION =
+NAME = calmwu-linux
+```
+
 ```
 make mrproper     # 在编译内核模块时，会用到make mrproper，目的是把下载的内核还原到初始状态（清除掉.o文件，清除掉一些在make之后生成的备份文件，甚至还清除了.config配置文件）。 在make mrproper时，会首先调用make clean
 cp -v /boot/config-$(uname -r) .config
