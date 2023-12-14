@@ -24,7 +24,7 @@ BTF能够用来增强BPF verifier的能力，**能够允许BPF代码直接访问
 
 - 安装dwarves。**yum -y install libdwarves1.x86_64 dwarves.x86_64**，如果配置了CONFIG_DEBUG_INFO_BTF=y则必须安装该包
 
-- 安装**pahole**。一定要用v1.22
+- 安装**pahole**。一定要用v1.22，发现4.18.0的内核还是用v1.20比较好
 
   ```
   git clone https://git.kernel.org/pub/scm/devel/pahole/pahole.git
@@ -469,7 +469,7 @@ static const struct bpf_sec_def *find_sec_def(const char *sec_name)
 下载好源码包执行下面命令，解压内核代码
 
     rpm2cpio kernel-4.18.0-305.el8.src.rpm | cpio -idmv
-    rpm -ivh kernel-4.18.0-305.el8.src.rpm
+    rpm -ivh kernel-4.18.0-305.el8.src.rpm   ----》 安装到/root/rpmbuild/SOURCES
     xz -d linux-4.18.0-305.el8.tar.xz
     tar -xvf linux-4.18.0-305.el8.tar -C /usr/src
 
@@ -478,6 +478,7 @@ static const struct bpf_sec_def *find_sec_def(const char *sec_name)
 ```
 make mrproper     # 在编译内核模块时，会用到make mrproper，目的是把下载的内核还原到初始状态（清除掉.o文件，清除掉一些在make之后生成的备份文件，甚至还清除了.config配置文件）。 在make mrproper时，会首先调用make clean
 cp -v /boot/config-$(uname -r) .config
+将.config中配置改为CONFIG_SYSTEM_TRUSTED_KEYS=""，或者scripts/config --disable SYSTEM_TRUSTED_KEYS，scripts/config --disable SYSTEM_REVOCATION_KEYS。
 make menuconfig
 make -j8
 make headers_install 					# /usr/include/linux
@@ -487,6 +488,8 @@ make bzImage -j8						# 生成压缩的内核映像
 make install							# 安装内核映像
 make modules_install
 ```
+
+在编译的过程中FAILED: load BTF from vmlinux: Invalid argument遇到这种问题，是link-vmlinux.sh脚本中对pahole版本判断加入特性导致的。这个时候要查看脚本确定合适的pahole版本来解决
 
 ```
 make M=samples/bpf V=1
